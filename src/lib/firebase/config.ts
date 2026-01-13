@@ -12,6 +12,13 @@ const firebaseConfig = {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// Debug Config Loading
+console.log("Firebase Config Loading:", {
+    projectId: firebaseConfig.projectId ? "Present" : "MISSING",
+    apiKey: firebaseConfig.apiKey ? "Present" : "MISSING",
+    authDomain: firebaseConfig.authDomain ? "Present" : "MISSING",
+});
+
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 

@@ -14,6 +14,7 @@ interface AuthContextType {
     userProfile: UserProfile | null;
     loading: boolean;
     logout: () => Promise<void>;
+    refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -21,6 +22,7 @@ const AuthContext = createContext<AuthContextType>({
     userProfile: null,
     loading: true,
     logout: async () => { },
+    refreshProfile: async () => { },
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -28,18 +30,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const fetchProfile = async (uid: string) => {
+        try {
+            console.log(`[Auth] Fetching profile for ${uid}...`);
+            const profile = await getUserProfile(uid);
+            console.log(`[Auth] Profile fetched:`, profile ? "Found" : "NOT FOUND", profile);
+            setUserProfile(profile);
+        } catch (error) {
+            console.error("Error fetching user profile:", error);
+            setUserProfile(null);
+        }
+    };
+
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             setUser(firebaseUser);
 
             if (firebaseUser) {
-                try {
-                    const profile = await getUserProfile(firebaseUser.uid);
-                    setUserProfile(profile);
-                } catch (error) {
-                    console.error("Error fetching user profile:", error);
-                    setUserProfile(null);
-                }
+                await fetchProfile(firebaseUser.uid);
             } else {
                 setUserProfile(null);
             }
@@ -52,10 +60,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const logout = async () => {
         await firebaseSignOut(auth);
+        setUser(null);
+        setUserProfile(null);
+    };
+
+    const refreshProfile = async () => {
+        if (user) {
+            await fetchProfile(user.uid);
+        }
     };
 
     return (
-        <AuthContext.Provider value={{ user, userProfile, loading, logout }}>
+        <AuthContext.Provider value={{ user, userProfile, loading, logout, refreshProfile }}>
             {children}
         </AuthContext.Provider>
     );

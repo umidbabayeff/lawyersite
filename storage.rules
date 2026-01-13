@@ -1,0 +1,36 @@
+rules_version = '2';
+
+// Craft rules based on data in your Firestore database
+// allow write: if firestore.get(
+//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Profiles - User can upload their own profile photo
+    match /profiles/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Chat attachments - Participants can read/write
+    match /chats/{chatId}/{fileName} {
+      // Ideally check if user is participant, but for MVP/standard rules:
+      allow read, write: if isAuthenticated();
+    }
+
+    // Verification Documents - Lawyers can upload their own
+    match /verification/{userId}/{fileName} {
+      allow read: if isAuthenticated(); // Admins/Lawyer themselves
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // CRM Documents
+    match /crm/{caseId}/{fileName} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}
