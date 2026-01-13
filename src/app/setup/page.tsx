@@ -18,11 +18,12 @@ export default function SetupPage() {
             setTimeout(() => {
                 router.push('/');
             }, 1000);
-        } catch (error: any) {
-            console.error(error);
-            setStatus("Error: " + error.message);
-            if (error.code === 'permission-denied') {
-                setStatus("Error: Permission Denied. Please ensure Firestore Rules are set to Test Mode (allow read, write: if true;) in the Firebase Console to run this initial setup.");
+        } catch (error: unknown) {
+            const err = error as Error;
+            console.error(err);
+            setStatus("Error: " + err.message);
+            if ((err as { code?: string }).code === 'PGRST116') {
+                setStatus("Error: Service Unavailable. Please ensure Supabase database and RLS policies are correctly configured via the SQL Editor.");
             }
         } finally {
             setLoading(false);
@@ -40,9 +41,10 @@ export default function SetupPage() {
             setTimeout(() => {
                 router.push('/');
             }, 1000);
-        } catch (error: any) {
-            console.error(error);
-            setStatus("Error: " + error.message);
+        } catch (error: unknown) {
+            const err = error as Error;
+            console.error(err);
+            setStatus("Error: " + err.message);
         } finally {
             setLoading(false);
         }
@@ -96,7 +98,7 @@ export default function SetupPage() {
                 </div>
 
                 <p className="text-xs text-gray-400">
-                    Note: This requires "Test Mode" rules in Firestore if you are not an Admin.
+                    Note: This requires proper RLS policies and table structures in Supabase.
                 </p>
             </div>
         </div>
