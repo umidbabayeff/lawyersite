@@ -99,7 +99,7 @@ export default function LawyerRequestDetailPage() {
                                 </div>
                                 <div className="ml-3">
                                     <p className="text-sm text-blue-700 dark:text-blue-300">
-                                        You submitted a proposal on {existingProposal.createdAt?.toDate ? existingProposal.createdAt.toDate().toLocaleDateString() : new Date().toLocaleDateString()}
+                                        You submitted a proposal on {existingProposal.createdAt ? new Date(existingProposal.createdAt).toLocaleDateString() : '...'}
                                     </p>
                                     <p className="mt-2 text-sm text-blue-600 dark:text-blue-400 font-medium">
                                         Status: <span className="uppercase">{existingProposal.status}</span>

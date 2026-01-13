@@ -78,12 +78,12 @@ export default function MyRequestsPage() {
                             <div className="flex shrink-0 items-center gap-x-4">
                                 <div className="hidden sm:flex sm:flex-col sm:items-end">
                                     <p className="text-sm leading-6 text-gray-900 dark:text-gray-300">
-                                        {request.createdAt?.toDate ? request.createdAt.toDate().toLocaleDateString() : new Date().toLocaleDateString()}
+                                        {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : '...'}
                                     </p>
                                     <p className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
                                         {t("crm.status")}: <span className={`capitalize font-medium ${request.status === 'open' ? 'text-green-600 dark:text-green-400' :
                                             request.status === 'accepted' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'
-                                            }`}>{t(`requests.status_${request.status}` as any)}</span>
+                                            }`}>{t(`requests.status_${request.status}` as "requests.status_open" | "requests.status_accepted" | "requests.status_closed")}</span>
                                     </p>
                                 </div>
                                 <div className="min-w-[60px] text-right">

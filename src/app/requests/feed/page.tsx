@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { getOpenCommunityRequests, getConstants, CommunityRequest } from "@/lib/services";
 // date-fns removed
-import { FaMapMarkerAlt, FaGavel, FaMoneyBillWave, FaFilter } from "react-icons/fa";
+import { FaMapMarkerAlt, FaMoneyBillWave } from "react-icons/fa";
 import SearchableSelect from "@/components/ui/SearchableSelect";
 
 export default function RequestFeedPage() {
@@ -24,7 +24,7 @@ export default function RequestFeedPage() {
         getConstants("specializations").then(setSpecializations);
     }, []);
 
-    const fetchRequests = () => {
+    useEffect(() => {
         setLoading(true);
         getOpenCommunityRequests({
             city: city || undefined,
@@ -32,10 +32,6 @@ export default function RequestFeedPage() {
         })
             .then(setRequests)
             .finally(() => setLoading(false));
-    };
-
-    useEffect(() => {
-        fetchRequests();
     }, [city, specialty]);
 
     if (!user || userProfile?.role !== 'lawyer') return <div className="p-8 text-center bg-gray-50 dark:bg-slate-950 min-h-screen">Access restricted to lawyers.</div>;
@@ -97,7 +93,7 @@ export default function RequestFeedPage() {
                                         {request.specialty}
                                     </span>
                                     <span className="text-xs text-gray-500 dark:text-gray-400">
-                                        {request.createdAt?.toDate ? request.createdAt.toDate().toLocaleDateString() : new Date().toLocaleDateString()}
+                                        {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : '...'}
                                     </span>
                                 </div>
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">

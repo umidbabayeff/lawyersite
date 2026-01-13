@@ -350,7 +350,10 @@ export const addReview = async (review: Record<string, unknown>) => {
 export const createCommunityRequest = async (data: Record<string, unknown>) => {
     console.log("createCommunityRequest", data.title);
 };
-export const getOpenCommunityRequests = async () => { return []; };
+export const getOpenCommunityRequests = async (filters?: { city?: string, specialty?: string }) => {
+    console.log("getOpenCommunityRequests", filters);
+    return [] as CommunityRequest[];
+};
 export const getCommunityRequestById = async (id: string) => {
     console.log("getCommunityRequestById", id);
     return null;
@@ -360,7 +363,7 @@ export const createProposal = async (data: Record<string, unknown>) => {
 };
 export const getProposalsForRequest = async (requestId: string) => {
     console.log("getProposalsForRequest", requestId);
-    return [];
+    return [] as RequestProposal[];
 };
 export const acceptProposal = async (requestId: string, proposalId: string, _lawyerId: string) => {
     console.log("Accepting proposal", proposalId, "for request", requestId, "by lawyer", _lawyerId);

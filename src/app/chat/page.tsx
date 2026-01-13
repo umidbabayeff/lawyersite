@@ -76,7 +76,7 @@ export default function ChatListPage() {
                                         </h3>
                                         {chat.updatedAt && (
                                             <span className="text-xs text-gray-400 flex-shrink-0">
-                                                {new Date(chat.updatedAt.seconds * 1000).toLocaleDateString()}
+                                                {new Date(chat.updatedAt).toLocaleDateString()}
                                             </span>
                                         )}
                                     </div>
