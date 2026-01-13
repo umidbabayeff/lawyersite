@@ -438,9 +438,71 @@ export const getSiteSettings = async (): Promise<SiteSettings> => {
 export const updateSiteSettings = async (settings: Partial<SiteSettings>) => {
     console.log("updateSiteSettings", settings);
 };
-export const seedDatabase = async () => { console.log("Seed not implemented for Supabase yet"); };
+const dummyLawyers = [
+    {
+        id: "00000000-0000-0000-0000-000000000001",
+        full_name: "John Doe",
+        role: "lawyer",
+        city: "Baku",
+        specializations: ["Criminal Law", "Civil Law"],
+        description: "Experienced lawyer with 10+ years in criminal defense.",
+        price: 150,
+        verified: true,
+        rating: 4.8,
+        avatar_url: "https://i.pravatar.cc/150?u=1",
+        banner_url: "https://picsum.photos/seed/1/800/400"
+    },
+    {
+        id: "00000000-0000-0000-0000-000000000002",
+        full_name: "Jane Smith",
+        role: "lawyer",
+        city: "Ganja",
+        specializations: ["Family Law", "Property Law"],
+        description: "Specializing in family disputes and property settlements.",
+        price: 120,
+        verified: true,
+        rating: 4.5,
+        avatar_url: "https://i.pravatar.cc/150?u=2",
+        banner_url: "https://picsum.photos/seed/2/800/400"
+    }
+];
+
+export const seedDatabase = async () => {
+    console.log("Seeding database...");
+    for (const lawyer of dummyLawyers) {
+        try {
+            // Note: This may fail if the IDs don't exist in auth.users due to FK constraints.
+            // For a pure demo, consider removing the FK constraint in your SQL editor temporarily.
+            const { error: profileError } = await supabase.from('user_profiles').upsert({
+                id: lawyer.id,
+                full_name: lawyer.full_name,
+                role: lawyer.role,
+                city: lawyer.city,
+                avatar_url: lawyer.avatar_url
+            });
+
+            if (!profileError) {
+                await supabase.from('lawyer_profiles').upsert({
+                    id: lawyer.id,
+                    specializations: lawyer.specializations,
+                    description: lawyer.description,
+                    price: lawyer.price,
+                    verified: lawyer.verified,
+                    rating: lawyer.rating,
+                    banner_url: lawyer.banner_url
+                });
+            }
+        } catch (err) {
+            console.error("Error seeding lawyer:", lawyer.full_name, err);
+        }
+    }
+    console.log("Seed attempt completed.");
+};
+
 export const clearDatabase = async () => {
-    console.log("clearDatabase");
+    console.log("Clearing database (Profiles only)...");
+    await supabase.from('lawyer_profiles').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await supabase.from('user_profiles').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 };
 
 
