@@ -2,7 +2,7 @@
 
 import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin } from "react-icons/fa";
 import { useEffect, useState } from "react";
-import { getSiteSettings, SiteSettings } from "@/lib/firebase/services";
+import { getSiteSettings, SiteSettings } from "@/lib/services";
 
 export default function Footer() {
     const [settings, setSettings] = useState<SiteSettings | null>(null);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getFavoriteLawyers, LawyerProfile } from "@/lib/firebase/services";
+import { getFavoriteLawyers, LawyerProfile } from "@/lib/services";
 import { useAuth } from "@/lib/auth";
 import Link from "next/link";
 import { FaMapMarkerAlt, FaSearch } from "react-icons/fa";
@@ -27,7 +27,7 @@ export default function FavoritesPage() {
         async function fetchFavorites() {
             if (!user) return;
             try {
-                const data = await getFavoriteLawyers(user.uid);
+                const data = await getFavoriteLawyers(user.id);
                 setFavorites(data);
             } catch (e) {
                 console.error("Failed to fetch favorites", e);

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useForm } from "react-hook-form";
-import { updateUserProfile, UserProfile, uploadProfilePhoto } from "@/lib/firebase/services";
+import { updateUserProfile, UserProfile, uploadProfilePhoto } from "@/lib/services";
 import { useRouter } from "next/navigation";
 import { FaUser, FaCity, FaCamera } from "react-icons/fa";
 import { useLanguage } from "@/lib/i18n_context";
@@ -35,7 +35,7 @@ export default function ClientProfilePage() {
         if (!user) return;
         setSaving(true);
         try {
-            await updateUserProfile(user.uid, {
+            await updateUserProfile(user.id, {
                 name: data.name,
                 city: data.city,
                 photoUrl: data.photoUrl
@@ -56,7 +56,7 @@ export default function ClientProfilePage() {
         setUploadingPhoto(true);
         try {
             const file = e.target.files[0];
-            const url = await uploadProfilePhoto(user.uid, file);
+            const url = await uploadProfilePhoto(user.id, file);
             setValue("photoUrl", url);
         } catch (error) {
             console.error(error);

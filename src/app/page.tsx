@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getVerifiedLawyers, LawyerProfile, getConstants, seedDatabase } from "@/lib/firebase/services";
+import { getVerifiedLawyers, LawyerProfile, getConstants, seedDatabase } from "@/lib/services";
 import Link from "next/link";
 import { FaSearch, FaMapMarkerAlt, FaGavel } from "react-icons/fa";
 import { MdVerified } from "react-icons/md";

@@ -5,7 +5,7 @@ import Link from "next/link";
 
 import { useAuth } from "@/lib/auth";
 import { useLanguage } from "@/lib/i18n_context";
-import { getMyClientRequests, CommunityRequest } from "@/lib/firebase/services";
+import { getMyClientRequests, CommunityRequest } from "@/lib/services";
 // date-fns removed
 import { FaPlus, FaMapMarkerAlt, FaGavel } from "react-icons/fa";
 
@@ -17,7 +17,7 @@ export default function MyRequestsPage() {
 
     useEffect(() => {
         if (user) {
-            getMyClientRequests(user.uid)
+            getMyClientRequests(user.id)
                 .then(setRequests)
                 .finally(() => setLoading(false));
         }

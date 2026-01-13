@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { getCommunityRequestById, createProposal, getProposalsForRequest, CommunityRequest, RequestProposal } from "@/lib/firebase/services";
+import { getCommunityRequestById, createProposal, getProposalsForRequest, CommunityRequest, RequestProposal } from "@/lib/services";
 // date-fns removed
 import { FaUser, FaMapMarkerAlt, FaGavel, FaMoneyBillWave, FaPaperPlane } from "react-icons/fa";
 
@@ -29,7 +29,7 @@ export default function LawyerRequestDetailPage() {
             ]).then(([reqData, proposals]) => {
                 setRequest(reqData);
                 // Check if this lawyer already submitted
-                const myProposal = proposals.find(p => p.lawyerId === user.uid);
+                const myProposal = proposals.find(p => p.lawyerId === user.id);
                 setExistingProposal(myProposal || null);
                 setLoading(false);
             });
@@ -44,9 +44,9 @@ export default function LawyerRequestDetailPage() {
         try {
             await createProposal({
                 requestId: request.id,
-                lawyerId: user.uid,
-                lawyerName: userProfile?.name || user.displayName || "Lawyer",
-                lawyerPhotoUrl: userProfile?.photoUrl || user.photoURL || null,
+                lawyerId: user.id,
+                lawyerName: userProfile?.name || "Lawyer",
+                lawyerPhotoUrl: userProfile?.photoUrl || null,
                 message,
                 proposedPrice: parseFloat(price),
                 estimatedDuration: duration

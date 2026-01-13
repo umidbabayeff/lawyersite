@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { subscribeToMessages, sendMessage, ChatMessage, markChatRead, uploadChatAttachment } from "@/lib/firebase/services";
+import { subscribeToMessages, sendMessage, ChatMessage, markChatRead, uploadChatAttachment } from "@/lib/services";
 import { FaPaperPlane, FaArrowLeft, FaPaperclip, FaFile } from "react-icons/fa";
 import Image from "next/image";
 
@@ -27,7 +27,7 @@ export default function ChatPage() {
         // Subscribe to messages
         const unsubscribe = subscribeToMessages(chatId, (msgs) => {
             setMessages(msgs);
-            markChatRead(chatId, user.uid); // Mark as read when messages load/update
+            markChatRead(chatId, user.id); // Mark as read when messages load/update
             // Scroll to bottom
             setTimeout(() => {
                 scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -42,7 +42,7 @@ export default function ChatPage() {
         if (!newMessage.trim() || !user) return;
 
         try {
-            await sendMessage(chatId, user.uid, newMessage);
+            await sendMessage(chatId, user.id, newMessage);
             setNewMessage("");
         } catch (error) {
             console.error(error);
@@ -58,7 +58,7 @@ export default function ChatPage() {
             const url = await uploadChatAttachment(file, chatId);
             const type = file.type.startsWith('image/') ? 'image' : 'file';
 
-            await sendMessage(chatId, user.uid, type === 'image' ? 'Sent an image' : 'Sent a file', {
+            await sendMessage(chatId, user.id, type === 'image' ? 'Sent an image' : 'Sent a file', {
                 type,
                 url,
                 name: file.name

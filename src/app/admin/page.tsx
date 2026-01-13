@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { getAllLawyersForAdmin, LawyerProfile, toggleLawyerVerification } from "@/lib/firebase/services";
+import { getAllLawyersForAdmin, LawyerProfile, toggleLawyerVerification } from "@/lib/services";
 import { useRouter } from "next/navigation";
 import UserList from "@/components/admin/UserList";
 import DataManager from "@/components/admin/DataManager";

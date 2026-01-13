@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import Link from "next/link";
 import { FaBriefcase, FaClock, FaFolder } from "react-icons/fa";
-import { getLawyerCases } from "@/lib/firebase/services";
+import { getLawyerCases } from "@/lib/services";
 import { useLanguage } from "@/lib/i18n_context";
 
 export default function CRMDashboard() {

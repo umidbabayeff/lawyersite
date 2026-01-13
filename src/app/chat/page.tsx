@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { getUserChats, ChatRoom, UserProfile } from "@/lib/firebase/services";
+import { getUserChats, ChatRoom, UserProfile } from "@/lib/services";
 import Link from "next/link";
 import Image from "next/image";
 import { FaComments } from "react-icons/fa";
@@ -16,7 +16,7 @@ export default function ChatListPage() {
 
     useEffect(() => {
         if (!loading && user) {
-            getUserChats(user.uid)
+            getUserChats(user.id)
                 .then((data) => {
                     setChats(data);
                 })

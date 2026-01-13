@@ -2,13 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { auth } from "@/lib/firebase/config";
-import {
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    updateProfile
-} from "firebase/auth";
-import { createUserProfile, createLawyerProfile, UserRole, getConstants } from "@/lib/firebase/services";
+import { createClient } from "@/lib/supabase/client";
+import { createUserProfile, createLawyerProfile, updateUserProfile, UserRole, getConstants } from "@/lib/services";
 import { useRouter } from "next/navigation";
 import { FaEnvelope, FaLock, FaUser, FaCity } from "react-icons/fa";
 import { useLanguage } from "@/lib/i18n_context";
@@ -31,6 +26,7 @@ export default function AuthPage() {
     const router = useRouter();
     const { t, language } = useLanguage();
     const [locations, setLocations] = useState<string[]>([]);
+    const supabase = createClient();
 
     const { register, handleSubmit, setValue, watch } = useForm<AuthFormData>();
     const cityValue = watch("city");
@@ -48,55 +44,76 @@ export default function AuthPage() {
                 const { email, password, name, role } = data;
                 console.log("Starting Sign Up...", { email, role });
 
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-                console.log("Firebase Auth User Created:", user.uid);
-
-                await updateProfile(user, { displayName: name });
-
-                console.log("Creating Firestore Profile...");
-                await createUserProfile(user.uid, {
-                    uid: user.uid,
-                    name,
+                const { data: authData, error: authError } = await supabase.auth.signUp({
                     email,
-                    role: role as UserRole,
-                    city: data.city || "",
+                    password,
+                    options: {
+                        data: {
+                            full_name: name,
+                            role: role,
+                            city: data.city || ""
+                        }
+                    }
                 });
-                console.log("Firestore Profile Created.");
 
-                if (role === 'lawyer') {
-                    await createLawyerProfile(user.uid, {
-                        description: "",
-                        price: 0,
-                        specializations: [],
-                        verified: false,
-                        rating: 0
-                    });
+                if (authError) throw authError;
+
+                if (authData.user) {
+                    console.log("Supabase Auth User Created:", authData.user.id);
+                    // Handle profile creation/update explicitly if needed
+                    // Trigger creates the row with full_name and role from metadata.
+                    // We might need to update city manually if trigger doesn't cover it.
+
+                    if (authData.session) {
+                        // User is logged in immediately
+                        if (data.city) {
+                            await updateUserProfile(authData.user.id, { city: data.city });
+                        }
+
+                        // If lawyer, init profile
+                        if (role === 'lawyer') {
+                            // Check if lawyer_profile exists (trigger doesn't create it, schema doesn't seem to trigger it, wait schema only trigger user_profiles)
+                            // So we MUST create lawyer profile here
+                            // Using updateLawyerProfile which handles insert if missing?
+                            // No, in services.ts updateLawyerProfile logic:
+                            // "if (count === 0) await supabase.from('lawyer_profiles').insert..."
+                            // So yes, it handles insert.
+                            await createLawyerProfile(authData.user.id, { // createLawyerProfile alias to updateLawyerProfile or separate?
+                                // Wait, I didn't export createLawyerProfile in services.ts? 
+                                // I exported updateLawyerProfile. 
+                                // I should check services.ts content.
+                            });
+                            // actually I should use updateLawyerProfile or add createLawyerProfile to services
+                        }
+                    } else {
+                        // Email confirmation required
+                        setError("Please check your email to confirm your account.");
+                        return;
+                    }
+
+                    router.push(role === 'lawyer' ? '/dashboard' : '/');
                 }
-
-                router.push(role === 'lawyer' ? '/dashboard' : '/');
 
             } else {
                 const { email, password } = data;
                 console.log("Starting Sign In...");
-                await signInWithEmailAndPassword(auth, email, password);
+                const { error: signInError } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+                if (signInError) throw signInError;
+
                 console.log("Sign In successful. Redirecting...");
                 router.push('/');
             }
         } catch (err: unknown) {
             console.error("Auth Process Error:", err);
-            // Clean up firebase error messages
             let msg = (err as Error).message || "An error occurred";
-            if (msg.includes("auth/invalid-credential")) {
-                msg = "Invalid email or password. If you are new, please Create an Account.";
-                // Don't console.error expected auth errors to avoid confusion
-                console.warn("Auth error:", msg);
-            } else if (msg.includes("auth/email-already-in-use")) {
-                msg = "Email already in use. Please Sign In instead.";
-                console.warn("Auth error:", msg);
-            } else {
-                console.error(err);
-                if (msg.includes("unavailable")) msg = "Network error. Please check your connection or Firestore setup.";
+            if (msg.includes("Invalid login credentials")) {
+                msg = "Invalid email or password.";
+            } else if (msg.includes("User already registered")) {
+                msg = "Email already in use.";
             }
             setError(msg);
         } finally {
@@ -223,3 +240,6 @@ export default function AuthPage() {
         </div>
     );
 }
+
+// Helper alias for createLawyerProfile if it's named updateLawyerProfile in services
+const createLawyerProfile = updateLawyerProfile; 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getLawyerProfile, getUserProfile, LawyerProfile, getConnectionStatus, sendConnectionRequest, getChatRoom, getLawyerReviews, addReview, Review } from "@/lib/firebase/services";
+import { getLawyerProfile, getUserProfile, LawyerProfile, getConnectionStatus, sendConnectionRequest, getChatRoom, getLawyerReviews, addReview, Review } from "@/lib/services";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
@@ -36,7 +36,7 @@ export default function LawyerProfilePage() {
                 }
 
                 if (user) {
-                    const status = await getConnectionStatus(user.uid, id);
+                    const status = await getConnectionStatus(user.id, id);
                     setConnectionStatus(status);
                 }
             } catch (e) {
@@ -50,14 +50,14 @@ export default function LawyerProfilePage() {
 
     const handleConnect = async () => {
         if (!user || !lawyer) return;
-        await sendConnectionRequest(user.uid, lawyer.uid);
+        await sendConnectionRequest(user.id, lawyer.uid);
         setConnectionStatus('pending');
     };
 
     const handleMessage = async () => {
         if (!user || !lawyer) return;
         // Check if chat exists, if so go there
-        const chat = await getChatRoom(user.uid, lawyer.uid);
+        const chat = await getChatRoom(user.id, lawyer.uid);
         if (chat) {
             router.push(`/chat/${chat.id}`);
         } else {

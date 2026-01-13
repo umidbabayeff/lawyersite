@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { createCase, getUserChats } from "@/lib/firebase/services";
+import { createCase, getUserChats } from "@/lib/services";
 
 export default function NewCasePage() {
     const { user, userProfile } = useAuth();

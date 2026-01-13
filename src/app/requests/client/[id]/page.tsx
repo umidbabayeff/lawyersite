@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { getCommunityRequestById, getProposalsForRequest, acceptProposal, CommunityRequest, RequestProposal } from "@/lib/firebase/services";
+import { getCommunityRequestById, getProposalsForRequest, acceptProposal, CommunityRequest, RequestProposal } from "@/lib/services";
 import { useAuth } from "@/lib/auth";
 import { useLanguage } from "@/lib/i18n_context";
 // date-fns removed

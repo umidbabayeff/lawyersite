@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAllUsers, updateUserRole, deleteUser, UserProfile, UserRole } from "@/lib/firebase/services";
+import { getAllUsers, updateUserRole, deleteUser, UserProfile, UserRole } from "@/lib/services";
 import { FaTrash, FaUser } from "react-icons/fa";
 import Image from "next/image";
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
-import { toggleFavorite } from "@/lib/firebase/services";
+import { toggleFavorite } from "@/lib/services";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 import { clsx } from "clsx";
 
@@ -42,7 +42,7 @@ export default function FavoriteButton({ lawyerId, className }: FavoriteButtonPr
         }
 
         try {
-            await toggleFavorite(user.uid, lawyerId, isFavorite);
+            await toggleFavorite(user.id, lawyerId, isFavorite);
             // Optimistic update
             setIsFavorite(!isFavorite);
             // Refresh profile to keep local state in sync for other components

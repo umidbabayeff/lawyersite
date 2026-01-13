@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getConstants, addConstant, removeConstant } from "@/lib/firebase/services";
+import { useEffect, useState, useCallback } from "react";
+import { getConstants, addConstant, removeConstant } from "@/lib/services";
 import { useLanguage } from "@/lib/i18n_context";
 import { FaTimes, FaPlus } from "react-icons/fa";
 
@@ -13,20 +13,23 @@ export default function DataManager() {
     const [newLocation, setNewLocation] = useState("");
     const [newSpec, setNewSpec] = useState("");
 
-    const refreshData = async () => {
+    const refreshData = useCallback(async () => {
         const locs = await getConstants('locations', language);
         const specs = await getConstants('specializations', language);
         setLocations(locs);
         setSpecializations(specs);
-    };
+    }, [language]);
 
     useEffect(() => {
-        refreshData();
-    }, [language]);
+        const load = async () => {
+            await refreshData();
+        };
+        load();
+    }, [language, refreshData]);
 
     const handleAdd = async (type: 'locations' | 'specializations', value: string) => {
         if (!value.trim()) return;
-        await addConstant(type, value, language);
+        await addConstant(type, value);
         if (type === 'locations') setNewLocation("");
         else setNewSpec("");
         await refreshData();
@@ -34,7 +37,7 @@ export default function DataManager() {
 
     const handleRemove = async (type: 'locations' | 'specializations', value: string) => {
         if (!confirm(`${t("admin.remove")} "${value}"?`)) return;
-        await removeConstant(type, value, language);
+        await removeConstant(type, value);
         await refreshData();
     };
 
@@ -54,6 +57,7 @@ export default function DataManager() {
                     />
                     <button
                         onClick={() => handleAdd('locations', newLocation)}
+                        aria-label={t("admin.addCity")}
                         className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90"
                     >
                         <FaPlus />
@@ -66,6 +70,7 @@ export default function DataManager() {
                             <span>{loc}</span>
                             <button
                                 onClick={() => handleRemove('locations', loc)}
+                                aria-label={`${t("admin.remove")} ${loc}`}
                                 className="text-slate-400 hover:text-red-500"
                             >
                                 <FaTimes size={12} />
@@ -89,6 +94,7 @@ export default function DataManager() {
                     />
                     <button
                         onClick={() => handleAdd('specializations', newSpec)}
+                        aria-label={t("admin.addSpec")}
                         className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90"
                     >
                         <FaPlus />
@@ -101,6 +107,7 @@ export default function DataManager() {
                             <span>{spec}</span>
                             <button
                                 onClick={() => handleRemove('specializations', spec)}
+                                aria-label={`${t("admin.remove")} ${spec}`}
                                 className="text-slate-400 hover:text-red-500"
                             >
                                 <FaTimes size={12} />

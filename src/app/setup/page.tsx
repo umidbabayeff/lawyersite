@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { seedDatabase, clearDatabase } from "@/lib/firebase/services";
+import { seedDatabase, clearDatabase } from "@/lib/services";
 import { useRouter } from "next/navigation";
 
 export default function SetupPage() {

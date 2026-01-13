@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
-import { getOpenCommunityRequests, getConstants, CommunityRequest } from "@/lib/firebase/services";
+import { getOpenCommunityRequests, getConstants, CommunityRequest } from "@/lib/services";
 // date-fns removed
 import { FaMapMarkerAlt, FaGavel, FaMoneyBillWave, FaFilter } from "react-icons/fa";
 import SearchableSelect from "@/components/ui/SearchableSelect";

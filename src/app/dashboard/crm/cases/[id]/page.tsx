@@ -10,7 +10,7 @@ import {
     getCRMDocuments, uploadCRMDocument,
     getChatRoom, getChatMessages, importChatDocument,
     Case, TimeEntry, CRMDocument, ChatMessage
-} from "@/lib/firebase/services";
+} from "@/lib/services";
 import { FaBriefcase, FaClock, FaFolder, FaPlay, FaStop, FaUpload, FaFileAlt, FaArrowLeft, FaComments } from "react-icons/fa";
 import Link from "next/link";
 
@@ -78,7 +78,7 @@ export default function CaseDetailPage() {
     const handleStartTimer = async () => {
         if (!user) return;
         setIsTimerRunning(true);
-        await startTimeEntry(id as string, user.uid);
+        await startTimeEntry(id as string, user.id);
 
         // Start local counter
         const interval = setInterval(() => {
@@ -107,7 +107,7 @@ export default function CaseDetailPage() {
 
         setUploading(true);
         try {
-            await uploadCRMDocument(e.target.files[0], id as string, user.uid);
+            await uploadCRMDocument(e.target.files[0], id as string, user.id);
             loadDocuments();
         } catch (err) {
             console.error(err);
@@ -229,7 +229,7 @@ export default function CaseDetailPage() {
                             <div>
                                 <p className="text-sm text-gray-500">{t('crm.created')}</p>
                                 <p className="font-medium dark:text-white">
-                                    {caseData.createdAt?.toDate ? caseData.createdAt.toDate().toLocaleDateString() : 'N/A'}
+                                    {caseData.createdAt ? new Date(caseData.createdAt).toLocaleDateString() : 'N/A'}
                                 </p>
                             </div>
                             <div>
@@ -344,7 +344,7 @@ export default function CaseDetailPage() {
                         {showChatImport && (
                             <ChatFileImporter
                                 clientId={caseData.clientId}
-                                lawyerId={user!.uid}
+                                lawyerId={user!.id}
                                 caseId={id as string}
                                 onImportComplete={() => {
                                     loadDocuments();
@@ -370,7 +370,7 @@ export default function CaseDetailPage() {
                                     <div className="flex-1 min-w-0">
                                         <p className="font-medium text-gray-900 dark:text-white truncate">{doc.fileName}</p>
                                         <p className="text-xs text-gray-500">
-                                            {doc.uploadedAt?.toDate ? doc.uploadedAt.toDate().toLocaleDateString() : 'Just now'}
+                                            {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : 'Just now'}
                                             {doc.source === 'chat' && <span className="ml-2 bg-blue-100 text-blue-700 text-[10px] px-1.5 py-0.5 rounded-full font-bold">CHAT</span>}
                                         </p>
                                     </div>
@@ -441,7 +441,7 @@ function ChatFileImporter({ clientId, lawyerId, caseId, onImportComplete }: { cl
                             {msg.type === 'image' ? <FaFileAlt className="text-purple-500 flex-shrink-0" /> : <FaFileAlt className="text-blue-500 flex-shrink-0" />}
                             <div className="truncate">
                                 <p className="text-xs font-medium truncate dark:text-white">{msg.fileName || 'Unnamed File'}</p>
-                                <p className="text-[10px] text-gray-400">{msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleDateString() : 'N/A'}</p>
+                                <p className="text-[10px] text-gray-400">{msg.createdAt ? new Date(msg.createdAt).toLocaleDateString() : 'N/A'}</p>
                             </div>
                         </div>
                         <button

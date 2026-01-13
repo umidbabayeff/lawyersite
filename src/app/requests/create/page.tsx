@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { createCommunityRequest } from "@/lib/firebase/services";
-import { getConstants } from "@/lib/firebase/services";
+import { createCommunityRequest } from "@/lib/services";
+import { getConstants } from "@/lib/services";
 import SearchableSelect from "@/components/ui/SearchableSelect";
 
 export default function CreateRequestPage() {
@@ -35,8 +35,8 @@ export default function CreateRequestPage() {
         setLoading(true);
         try {
             await createCommunityRequest({
-                clientId: user.uid,
-                clientName: userProfile?.name || user.displayName || "Anonymous Client",
+                clientId: user.id,
+                clientName: userProfile?.name || "Anonymous Client",
                 title,
                 description,
                 location: city,

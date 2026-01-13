@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useForm } from "react-hook-form";
-import { getLawyerProfile, updateLawyerProfile, LawyerProfile, getIncomingRequests, respondToConnectionRequest, ConnectionRequest, getConstants, uploadVerificationDocument, uploadProfilePhoto, uploadBannerPhoto } from "@/lib/firebase/services";
+import { getLawyerProfile, updateLawyerProfile, LawyerProfile, getIncomingRequests, respondToConnectionRequest, ConnectionRequest, getConstants, uploadVerificationDocument, uploadProfilePhoto, uploadBannerPhoto } from "@/lib/services";
 import SearchableSelect from "@/components/ui/SearchableSelect";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/i18n_context";
@@ -37,7 +37,7 @@ export default function Dashboard() {
 
     useEffect(() => {
         if (user && userProfile?.role === 'lawyer') {
-            getIncomingRequests(user.uid).then(setRequests);
+            getIncomingRequests(user.id).then(setRequests);
         }
     }, [user, userProfile]);
 
@@ -52,7 +52,7 @@ export default function Dashboard() {
         setUploadingDoc(true);
         try {
             const file = e.target.files[0];
-            const newDoc = await uploadVerificationDocument(user.uid, file);
+            const newDoc = await uploadVerificationDocument(user.id, file);
             setVerifiedDocs(prev => [...prev, newDoc]);
         } catch (error) {
             console.error(error);
@@ -67,7 +67,7 @@ export default function Dashboard() {
         setUploadingPhoto(true);
         try {
             const file = e.target.files[0];
-            const url = await uploadProfilePhoto(user.uid, file);
+            const url = await uploadProfilePhoto(user.id, file);
             setValue("photoUrl", url);
             // Optionally save immediately or let user save form
         } catch (error) {
@@ -83,7 +83,7 @@ export default function Dashboard() {
         setUploadingBanner(true);
         try {
             const file = e.target.files[0];
-            const url = await uploadBannerPhoto(user.uid, file);
+            const url = await uploadBannerPhoto(user.id, file);
             setValue("bannerUrl", url);
         } catch (error) {
             console.error(error);
@@ -100,7 +100,7 @@ export default function Dashboard() {
         }
 
         if (user) {
-            getLawyerProfile(user.uid).then(data => {
+            getLawyerProfile(user.id).then(data => {
                 if (data) {
                     setValue("name", userProfile?.name || "");
                     setValue("city", userProfile?.city || "");
@@ -129,7 +129,7 @@ export default function Dashboard() {
             const specs = specsString.split(",").map(s => s.trim()).filter(s => s);
 
             // Update Lawyer specific data
-            await updateLawyerProfile(user.uid, {
+            await updateLawyerProfile(user.id, {
                 name: data.name,
                 city: data.city,
                 price: Number(data.price),
