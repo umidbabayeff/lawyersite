@@ -12,11 +12,13 @@ const firebaseConfig = {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:12345:web:mock",
 };
 
-// Debug Config Loading
-console.log("Firebase Config Loading:", {
-    projectId: firebaseConfig.projectId ? "Present" : "MISSING",
-    apiKey: firebaseConfig.apiKey ? "Present" : "MISSING",
-    authDomain: firebaseConfig.authDomain ? "Present" : "MISSING",
+// Debug Config Loading - SENSITIVE: Remove after debugging
+console.log("Firebase Config Debug:", {
+    apiKeySource: firebaseConfig.apiKey === "mock_key" ? "MOCK" : "REAL (" + firebaseConfig.apiKey.substring(0, 5) + "...)",
+    projectIdSource: firebaseConfig.projectId === "mock_project_id" ? "MOCK" : "REAL (" + firebaseConfig.projectId + ")",
+    envCheck: {
+        HAS_API_KEY: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    }
 });
 
 // Initialize Firebase
