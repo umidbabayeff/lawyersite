@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { createClient } from "@/lib/supabase/client";
-import { createUserProfile, createLawyerProfile, updateUserProfile, UserRole, getConstants } from "@/lib/services";
+import { createLawyerProfile, updateUserProfile, UserRole, getConstants } from "@/lib/services";
 import { useRouter } from "next/navigation";
 import { FaEnvelope, FaLock, FaUser, FaCity } from "react-icons/fa";
 import { useLanguage } from "@/lib/i18n_context";
@@ -240,6 +240,3 @@ export default function AuthPage() {
         </div>
     );
 }
-
-// Helper alias for createLawyerProfile if it's named updateLawyerProfile in services
-const createLawyerProfile = updateLawyerProfile; 
