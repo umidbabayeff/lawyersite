@@ -21,7 +21,7 @@ export default function NewCasePage() {
         const fetchClients = async () => {
             if (user) {
                 try {
-                    const chats = await getUserChats(user.uid);
+                    const chats = await getUserChats(user.id);
                     // Extract unique clients from chats
                     const uniqueClientsMap = new Map();
                     chats.forEach(chat => {
@@ -48,7 +48,7 @@ export default function NewCasePage() {
         setLoading(true);
         try {
             await createCase({
-                lawyerId: user.uid,
+                lawyerId: user.id,
                 title: formData.title,
                 clientName: formData.clientName,
                 clientId: formData.clientId || undefined,

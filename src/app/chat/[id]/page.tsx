@@ -96,7 +96,7 @@ export default function ChatPage() {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-950">
                 {messages.map((msg) => {
-                    const isMe = msg.senderId === user?.uid;
+                    const isMe = msg.senderId === user?.id;
                     return (
                         <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                             <div className={`max-w-[75%] rounded-2xl px-4 py-2 shadow-sm ${isMe
@@ -119,7 +119,7 @@ export default function ChatPage() {
                                 ) : null}
                                 <p className="text-sm">{msg.text}</p>
                                 <p className={`text-[10px] mt-1 text-right ${isMe ? 'text-primary-foreground/70' : 'text-gray-400 dark:text-gray-500'}`}>
-                                    {msg.createdAt?.seconds ? new Date(msg.createdAt.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}
+                                    {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}
                                 </p>
                             </div>
                         </div>

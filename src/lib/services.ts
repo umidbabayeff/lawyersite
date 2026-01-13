@@ -62,6 +62,7 @@ export interface ChatRoom {
     lastMessage?: string;
     updatedAt: string | Date;
     unreadCounts?: { [userId: string]: number };
+    otherUser?: UserProfile;
 }
 
 export interface SiteSettings {
@@ -84,7 +85,7 @@ export interface CommunityRequest {
     clientId: string;
     title: string;
     description: string;
-    status: 'open' | 'closed';
+    status: 'open' | 'accepted' | 'closed';
     createdAt: string | Date;
     clientName: string;
     location?: string;
@@ -116,6 +117,7 @@ export interface Case {
     status: 'new' | 'in_progress' | 'court' | 'completed';
     createdAt: string | Date;
     description?: string;
+    lawyerId?: string;
 }
 
 export interface TimeEntry {
@@ -360,8 +362,10 @@ export const getProposalsForRequest = async (requestId: string) => {
     console.log("getProposalsForRequest", requestId);
     return [];
 };
-export const acceptProposal = async (proposalId: string) => {
-    console.log("acceptProposal", proposalId);
+export const acceptProposal = async (requestId: string, proposalId: string, _lawyerId: string) => {
+    console.log("Accepting proposal", proposalId, "for request", requestId, "by lawyer", _lawyerId);
+    await supabase.from('request_proposals').update({ status: 'accepted' }).eq('id', proposalId);
+    await supabase.from('community_requests').update({ status: 'accepted' }).eq('id', requestId);
 };
 export const getMyClientRequests = async (clientId: string) => {
     console.log("getMyClientRequests", clientId);

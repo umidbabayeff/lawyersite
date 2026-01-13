@@ -1,18 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Image from "next/image";
 import { getCommunityRequestById, getProposalsForRequest, acceptProposal, CommunityRequest, RequestProposal } from "@/lib/services";
 import { useAuth } from "@/lib/auth";
 import { useLanguage } from "@/lib/i18n_context";
 // date-fns removed
-import { FaUser, FaCheckCircle, FaMoneyBillWave, FaClock } from "react-icons/fa";
+import { FaUser, FaCheckCircle, FaClock } from "react-icons/fa";
 
 export default function RequestDetailPage() {
     const { id } = useParams();
     const { user } = useAuth();
-    const router = useRouter();
     const { t } = useLanguage();
     const [request, setRequest] = useState<CommunityRequest | null>(null);
     const [proposals, setProposals] = useState<RequestProposal[]>([]);
@@ -55,7 +54,7 @@ export default function RequestDetailPage() {
 
     if (loading) return <div className="p-8 text-center">Loading details...</div>;
     if (!request) return <div className="p-8 text-center">Request not found.</div>;
-    if (user?.uid !== request.clientId) return <div className="p-8 text-center">Unauthorized access.</div>;
+    if (user?.id !== request.clientId) return <div className="p-8 text-center">Unauthorized access.</div>;
 
     return (
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -65,13 +64,13 @@ export default function RequestDetailPage() {
                     <div>
                         <h3 className="text-2xl font-bold leading-6 text-gray-900 dark:text-white">{request.title}</h3>
                         <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-slate-400">
-                            {t("requests.posted_on")} {request.createdAt?.toDate ? request.createdAt.toDate().toLocaleDateString() : new Date().toLocaleDateString()}
+                            {t("requests.posted_on")} {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}
                         </p>
                     </div>
                     <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${request.status === 'open' ? 'bg-green-100 text-green-800' :
                         request.status === 'accepted' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
                         }`}>
-                        {t(`requests.status_${request.status}` as any).toUpperCase()}
+                        {t(`requests.status_${request.status}` as "requests.status_open" | "requests.status_accepted" | "requests.status_closed").toUpperCase()}
                     </span>
                 </div>
                 <div className="border-t border-gray-200 dark:border-slate-800 px-4 py-5 sm:px-6">
@@ -126,7 +125,7 @@ export default function RequestDetailPage() {
                                     <div>
                                         <h4 className="text-lg font-medium text-gray-900 dark:text-white">{proposal.lawyerName}</h4>
                                         <p className="text-sm text-gray-500 dark:text-slate-400">
-                                            {t("requests.submitted")} {proposal.createdAt?.toDate ? proposal.createdAt.toDate().toLocaleDateString() : new Date().toLocaleDateString()}
+                                            {t("requests.submitted")} {proposal.createdAt ? new Date(proposal.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}
                                         </p>
                                     </div>
                                 </div>
