@@ -312,9 +312,12 @@ export const getChatMessages = async (chatId: string): Promise<ChatMessage[]> =>
 export const markChatRead = async (chatId: string, userId: string) => {
     console.log("markChatRead for", chatId, "by", userId);
 };
-export const uploadChatAttachment = async (file: File) => {
-    console.log("uploadChatAttachment", file.name);
-    return "";
+export const uploadChatAttachment = async (file: File, chatId: string) => {
+    const path = `chats/${chatId}/${Date.now()}_${file.name}`;
+    const { error } = await supabase.storage.from('images').upload(path, file);
+    if (error) throw error;
+    const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(path);
+    return publicUrl;
 };
 export const importChatDocument = async (caseId: string, lawyerId: string, msg: ChatMessage) => {
     console.log("importChatDocument", msg.fileName, "to", caseId, "by", lawyerId);
