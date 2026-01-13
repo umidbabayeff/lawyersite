@@ -237,7 +237,7 @@ function LawyerReviews({ lawyerId }: { lawyerId: string }) {
         try {
             await addReview({
                 lawyerId,
-                clientId: user.uid,
+                clientId: user.id,
                 clientName: userProfile?.name || "Anonymous Client",
                 rating: newRating,
                 comment: newComment

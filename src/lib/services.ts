@@ -281,7 +281,7 @@ export const respondToConnectionRequest = async (requestId: string, status: 'acc
     await supabase.from('connection_requests').update({ status }).eq('id', requestId);
 };
 
-export const getConnectionStatus = async (userId: string, otherId: string) => {
+export const getConnectionStatus = async (userId: string, otherId: string): Promise<'none' | 'pending' | 'accepted' | 'rejected'> => {
     console.log("getConnectionStatus between", userId, otherId);
     return 'none';
 };
