@@ -978,6 +978,14 @@ export const uploadVerificationDocument = async (uid: string, file: File) => {
 
 // --- Video Call Signaling ---
 // --- Video Call Signaling ---
+export enum CallState {
+    IDLE = 'IDLE',
+    CALLING = 'CALLING',
+    RINGING = 'RINGING',
+    CONNECTED = 'CONNECTED',
+    ENDED = 'ENDED'
+}
+
 export interface CallSignal {
     type: 'offer' | 'answer' | 'ice-candidate' | 'end-call' | 'request-call' | 'accept-call' | 'reject-call' | 'busy' | 'missed-call';
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
