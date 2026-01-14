@@ -41,10 +41,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     useEffect(() => {
         // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                fetchProfile(session.user.id);
+        supabase.auth.getSession().then(({ data: { session }, error }) => {
+            if (error) {
+                console.error("Auth session error:", error);
+                if (error.message.includes("Refresh Token Not Found") || error.message.includes("Invalid Refresh Token")) {
+                    supabase.auth.signOut();
+                    setUser(null);
+                    setUserProfile(null);
+                }
+            } else {
+                setUser(session?.user ?? null);
+                if (session?.user) {
+                    fetchProfile(session.user.id);
+                }
             }
             setLoading(false);
         });
