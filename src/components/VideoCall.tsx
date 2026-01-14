@@ -236,7 +236,16 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
 
         setupMediaAndSignaling();
 
+        const handleBeforeUnload = () => {
+            // Best effort to notify peer before closing
+            // We use 'void' to fire-and-forget promise
+            void signalCall(chatId, { type: 'end-call', senderId: myId });
+            endCallCleanup();
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
         return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
             unsubscribe();
             endCallCleanup();
         };
