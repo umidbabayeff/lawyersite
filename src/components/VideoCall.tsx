@@ -114,8 +114,13 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
 
         // Subscribe to signaling events for THIS active call
         const unsubscribe = subscribeToCallEvents(myId, async (signal: CallSignal) => {
+            addLog(`Signal raw: ${signal.type} from ${signal.senderId}`);
+
             // Filter: Ignore signals not from our peer
-            if (signal.senderId !== chatId) return;
+            if (signal.senderId !== chatId) {
+                addLog(`⚠️ Ignored signal from mismatched ID: ${signal.senderId} (Expected: ${chatId})`);
+                return;
+            }
 
             addLog(`Signal received: ${signal.type}`);
 

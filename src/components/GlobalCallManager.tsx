@@ -44,10 +44,13 @@ export default function GlobalCallManager() {
 
         console.log("GlobalCallManager: Subscribing to events for", user.id);
         const unsubscribe = subscribeToCallEvents(user.id, async (signal) => {
-            console.log("GlobalCallManager received:", signal.type);
+            console.log("GlobalCallManager received:", signal.type, "from", signal.senderId);
 
             if (signal.type === 'offer') {
-                if (isCallActiveRef.current) return;
+                if (isCallActiveRef.current) {
+                    console.log("GlobalCallManager: Ignoring offer (Call active)");
+                    return;
+                }
 
                 setIncomingSignal(signal);
                 setIceCandidates([]); // Clear previous candidates
@@ -58,20 +61,32 @@ export default function GlobalCallManager() {
                 setIsIncomingCall(true);
 
             } else if (signal.type === 'ice-candidate') {
+                console.log("GlobalCallManager: ICE Candidate detected.");
                 // Buffer candidates while ringing
                 if (!isCallActiveRef.current) {
+                    console.log("GlobalCallManager: Buffering candidate.");
                     setIceCandidates(prev => [...prev, signal.payload]);
+                } else {
+                    console.log("GlobalCallManager: Ignoring candidate (Handled by VideoCall).");
                 }
             } else if (signal.type === 'end-call') {
-                setIsCallActive(false);
+                console.log("GlobalCallManager: End call signal.");
                 setIsIncomingCall(false);
                 setIncomingSignal(undefined);
                 setIceCandidates([]);
+                if (!isCallActiveRef.current) {
+                    // Only close if we are not in the middle of a call (or maybe we should close?)
+                    // If it's the ringing modal, close it.
+                    setCallerProfile(null);
+                }
             }
         });
 
-        return () => unsubscribe();
-    }, [user]); // Only subscribe once on mount (per user)
+        return () => {
+            console.log("GlobalCallManager: Unsubscribing");
+            unsubscribe();
+        };
+    }, [user]); // Removed isCallActive/isIncomingCall to prevent re-subscribing churn // Only subscribe once on mount (per user)
 
     const handleAcceptCall = () => {
         setIsIncomingCall(false);
