@@ -31,8 +31,13 @@ export default function AdminPage() {
     }, [user, userProfile, loading, router, refresh, activeTab]);
 
     const handleVerify = async (uid: string, status: boolean) => {
-        await toggleLawyerVerification(uid, status);
-        setRefresh(prev => prev + 1);
+        try {
+            await toggleLawyerVerification(uid, status);
+            setRefresh(prev => prev + 1);
+        } catch (error: unknown) {
+            console.error(error);
+            alert("Failed to verify: " + ((error as Error).message || "Unknown error"));
+        }
     };
 
     if (loading || userProfile?.role !== 'admin') return <div className="p-8">{t("admin.loading")}</div>;
