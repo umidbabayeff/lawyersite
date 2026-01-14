@@ -285,7 +285,7 @@ export const getFavoriteLawyers = async (userId: string): Promise<LawyerProfile[
 
     if (!data) return [];
 
-    return data.map((item: any) => {
+    return data.map((item: { lawyer: Record<string, any> }) => {
         const l = item.lawyer;
         if (!l) return null;
 
