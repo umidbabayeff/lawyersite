@@ -19,7 +19,6 @@ export async function createClient() {
                 setAll(cookiesToSet) {
                     try {
                         cookiesToSet.forEach(({ name, value, options }) =>
-                            // @ts-ignore
                             cookieStore.set(name, value, options)
                         )
                     } catch {

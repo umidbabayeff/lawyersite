@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useLanguage } from "@/lib/i18n_context";
-import { FaHome, FaSearch, FaHeart, FaUser, FaTachometerAlt, FaComments, FaBriefcase } from "react-icons/fa";
+import { FaHome, FaSearch, FaHeart, FaUser, FaComments, FaBriefcase } from "react-icons/fa";
 import clsx from "clsx";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 

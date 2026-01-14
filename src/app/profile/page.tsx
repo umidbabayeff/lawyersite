@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useForm } from "react-hook-form";
@@ -85,9 +87,9 @@ export default function ClientProfilePage() {
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t("profile.photoUrl")}</label>
                         <div className="flex items-center gap-4">
-                            <div className="h-16 w-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-700">
+                            <div className="h-16 w-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-700 relative">
                                 {photoUrlValue || userProfile?.photoUrl ? (
-                                    <img src={photoUrlValue || userProfile?.photoUrl} alt="Avatar" className="h-full w-full object-cover" />
+                                    <Image src={photoUrlValue || userProfile?.photoUrl || ''} alt="Avatar" fill className="object-cover" />
                                 ) : (
                                     <FaUser className="text-slate-300 dark:text-slate-600 text-2xl" />
                                 )}

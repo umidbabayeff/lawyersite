@@ -4,13 +4,13 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import Link from "next/link";
 import { FaBriefcase, FaClock, FaFolder } from "react-icons/fa";
-import { getLawyerCases } from "@/lib/services";
+import { getLawyerCases, Case } from "@/lib/services";
 import { useLanguage } from "@/lib/i18n_context";
 
 export default function CRMDashboard() {
     const { userProfile } = useAuth();
     const { t } = useLanguage();
-    const [cases, setCases] = useState<any[]>([]);
+    const [cases, setCases] = useState<Case[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
