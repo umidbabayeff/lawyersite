@@ -43,12 +43,10 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
     const iceBatch = useRef<RTCIceCandidate[]>([]);
     const iceBatchTimeout = useRef<NodeJS.Timeout | null>(null);
 
-    const [debugLogs, setDebugLogs] = useState<string[]>([]);
     const [iceState, setIceState] = useState<RTCIceConnectionState>('new');
 
     const addLog = (msg: string) => {
         console.log(msg);
-        setDebugLogs(prev => [...prev.slice(-50), msg]); // Keep last 50 logs
     };
 
     useEffect(() => {
