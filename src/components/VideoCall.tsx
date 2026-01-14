@@ -39,6 +39,10 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const pendingCandidates = useRef<any[]>([]);
 
+    // Batch mechanism refs
+    const iceBatch = useRef<RTCIceCandidate[]>([]);
+    const iceBatchTimeout = useRef<NodeJS.Timeout | null>(null);
+
     const [debugLogs, setDebugLogs] = useState<string[]>([]);
     const [iceState, setIceState] = useState<RTCIceConnectionState>('new');
 
@@ -71,8 +75,6 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
 
         // Handle ICE candidates (Sending)
         // Batch mechanism to prevent spamming Supabase too quickly
-        const iceBatch = useRef<RTCIceCandidate[]>([]);
-        const iceBatchTimeout = useRef<NodeJS.Timeout | null>(null);
 
         const flushIceBatch = () => {
             if (iceBatch.current.length === 0) return;
