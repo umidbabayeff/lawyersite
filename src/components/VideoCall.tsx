@@ -308,7 +308,6 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
                     ref={remoteVideoRef}
                     autoPlay
                     playsInline
-                    muted // Critical for autoplay!
                     className="w-full h-full object-cover"
                     onLoadedMetadata={() => {
                         if (remoteVideoRef.current && remoteStream) {
