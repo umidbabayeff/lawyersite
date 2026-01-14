@@ -86,7 +86,8 @@ export default function GlobalCallManager() {
             console.log("GlobalCallManager: Unsubscribing");
             unsubscribe();
         };
-    }, [user]); // Removed isCallActive/isIncomingCall to prevent re-subscribing churn // Only subscribe once on mount (per user)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id]); // Stable dependency: Only re-subscribe if ID changes, not object ref // Only subscribe once on mount (per user)
 
     const handleAcceptCall = () => {
         setIsIncomingCall(false);
