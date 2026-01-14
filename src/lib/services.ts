@@ -1012,26 +1012,33 @@ export const subscribeToCallEvents = (userId: string, callback: (signal: CallSig
 export const signalCall = async (receiverId: string, signal: CallSignal) => {
     console.log(`📡 Sending signal to call:${receiverId}`, signal.type);
 
-    // We must send to the RECEIVER's channel
+    // We send to the RECEIVER's channel
     const channel = supabase.channel(`call:${receiverId}`);
 
-    // We need to ensure subscription before sending? 
-    // Actually for broadcast to work reliably, usually we just publish to the channel.
-    // However, Supabase requires you to subscribe to a channel to broadcast to it.
+    const sendPayload = async () => {
+        await channel.send({
+            type: 'broadcast',
+            event: 'signal',
+            payload: signal
+        });
+        console.log(`📡 Signal sent successfully to call:${receiverId} (${signal.type})`);
+    };
 
+    // If already subscribed, send immediately
+    // Note: state is 'joined' if subscribed
+    if (channel.state === 'joined') {
+        await sendPayload();
+        return;
+    }
+
+    // Otherwise subscribe
     await channel.subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-            await channel.send({
-                type: 'broadcast',
-                event: 'signal',
-                payload: signal
-            });
-            // We can unsubscribe after sending, but keeping it cached is often better 
-            // supabase client handles caching.
-            console.log(`📡 Signal sent successfully to call:${receiverId}`);
-            // supabase.removeChannel(channel); // Cleanup?
-        } else {
-            console.error(`📡 Failed to subscribe/send to call:${receiverId} status:`, status);
+            await sendPayload();
+            // Do NOT remove channel, keep it open for subsequent ICE candidates
+            // supabase.removeChannel(channel); 
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.error(`📡 Failed to subscribe to call:${receiverId} status:`, status);
         }
     });
 };
