@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import Navbar from "@/components/layout/Navbar";
 import BottomNav from "@/components/layout/BottomNav";
 import Footer from "@/components/layout/Footer";
+import GlobalCallManager from "@/components/GlobalCallManager";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,6 +27,7 @@ export default function RootLayout({
         className={`${inter.className} antialiased bg-gray-50 min-h-screen flex flex-col`}
       >
         <AuthProvider>
+          <GlobalCallManager />
           <LanguageProvider>
             <ThemeProvider
               attribute="class"

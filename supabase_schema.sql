@@ -89,11 +89,16 @@ insert with check (auth.uid() = sender_id);
 create policy "Users can update requests sent to them" on public.connection_requests for
 update using (auth.uid() = receiver_id);
 -- 6. MESSAGES
+-- 6. MESSAGES
 create table public.messages (
     id uuid default uuid_generate_v4() primary key,
     sender_id uuid references public.user_profiles(id) not null,
     receiver_id uuid references public.user_profiles(id) not null,
     content text,
+    is_read boolean default false,
+    type text default 'text',
+    file_url text,
+    file_name text,
     created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 -- RLS

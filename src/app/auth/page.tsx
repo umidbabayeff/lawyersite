@@ -66,9 +66,12 @@ export default function AuthPage() {
 
                     if (authData.session) {
                         // User is logged in immediately
-                        if (data.city) {
-                            await updateUserProfile(authData.user.id, { city: data.city });
-                        }
+                        // User is logged in immediately
+                        await updateUserProfile(authData.user.id, {
+                            name: name,
+                            role: role,
+                            city: data.city || ""
+                        });
 
                         // If lawyer, init profile
                         if (role === 'lawyer') {

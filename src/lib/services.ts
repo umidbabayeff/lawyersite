@@ -285,18 +285,25 @@ export const getFavoriteLawyers = async (userId: string): Promise<LawyerProfile[
 
     if (!data) return [];
 
-    return data.map((item: { lawyer: Record<string, any> }) => {
+    // Cast data to a more specific type structure matching the query result
+    const rows = data as unknown as Array<{
+        lawyer: Record<string, unknown> & {
+            user_profiles: Record<string, unknown> | null
+        }
+    }>;
+
+    return rows.map((item) => {
         const l = item.lawyer;
         if (!l) return null;
 
         return {
             ...mapProfileToUser(l.user_profiles),
-            specializations: l.specializations || [],
-            description: l.description || '',
+            specializations: (l.specializations as string[]) || [],
+            description: (l.description as string) || '',
             price: Number(l.price) || 0,
-            verified: l.verified || false,
+            verified: (l.verified as boolean) || false,
             rating: Number(l.rating) || 0,
-            bannerUrl: l.banner_url
+            bannerUrl: l.banner_url as string
         };
     }).filter(Boolean) as LawyerProfile[];
 };
@@ -307,21 +314,62 @@ export const getIncomingRequests = async (userId: string): Promise<ConnectionReq
     const { data } = await supabase.from('connection_requests').select('*, sender:user_profiles!sender_id (*)').eq('receiver_id', userId).eq('status', 'pending');
     if (!data) return [];
     return (data as Array<Record<string, unknown>>).map((r) => {
-        const sender = r.sender as Record<string, unknown>;
+        const sender = (r.sender as Record<string, unknown>) || {};
         return {
             id: r.id as string,
             senderId: r.sender_id as string,
             receiverId: r.receiver_id as string,
             status: r.status as 'pending' | 'accepted' | 'rejected',
             createdAt: r.created_at as string,
-            senderName: sender.full_name as string,
-            senderPhotoUrl: sender.avatar_url as string
+            senderName: (sender.full_name as string) || "Unknown User",
+            senderPhotoUrl: (sender.avatar_url as string) || ""
         };
     });
 };
 
+export const subscribeToIncomingRequestsCount = (userId: string, callback: (count: number) => void) => {
+    const fetchCount = async () => {
+        const { count } = await supabase
+            .from('connection_requests')
+            .select('*', { count: 'exact', head: true })
+            .eq('receiver_id', userId)
+            .eq('status', 'pending');
+        callback(count || 0);
+    };
+
+    fetchCount();
+
+    const channel = supabase.channel(`requests:${userId}`)
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'connection_requests', filter: `receiver_id=eq.${userId}` },
+            () => {
+                fetchCount();
+            }
+        )
+        .subscribe();
+
+    return () => {
+        supabase.removeChannel(channel);
+    };
+};
+
 export const respondToConnectionRequest = async (requestId: string, status: 'accepted' | 'rejected') => {
-    await supabase.from('connection_requests').update({ status }).eq('id', requestId);
+    const { data, error } = await supabase
+        .from('connection_requests')
+        .update({ status })
+        .eq('id', requestId)
+        .select()
+        .single();
+
+    if (error) throw error;
+
+    if (status === 'accepted' && data) {
+        // Automatically start the chat by sending a system-like message from the acceptor
+        // connection_request.sender_id is the one who ASKED (Client) -> They become the receiver of this message
+        // connection_request.receiver_id is the one who ACCEPTED (Lawyer) -> They are the sender of this message
+        await sendMessage(data.sender_id, data.receiver_id, "I have accepted your connection request. How can I help you?");
+    }
 };
 
 export const getConnectionStatus = async (userId: string, otherId: string): Promise<'none' | 'pending' | 'accepted' | 'rejected'> => {
@@ -335,28 +383,232 @@ export const sendConnectionRequest = async (senderId: string, receiverId: string
 
 
 // --- Chat ---
+
+// Helper to get conversation ID (standardized as sorted IDs joined) or just use logic
+// For this app, the Page uses `/chat/[targetUserId]`, so the "Chat ID" IS the "Other User ID".
+
 export const getUserChats = async (userId: string): Promise<ChatRoom[]> => {
-    console.log("getUserChats for", userId);
-    return [];
+    // 1. Fetch all messages involving the user
+    // Note: This is an inefficient MVP approach. For production, use a separate 'conversations' table or a recursive SQL view.
+    const { data: messages, error } = await supabase
+        .from('messages')
+        .select('*')
+        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error("getUserChats error", error);
+        return [];
+    }
+
+    // 2. Group by the OTHER user
+    const chatsMap = new Map<string, ChatRoom>();
+
+    if (messages) {
+        for (const msg of messages) {
+            const otherId = msg.sender_id === userId ? msg.receiver_id : msg.sender_id;
+
+            if (!chatsMap.has(otherId)) {
+                chatsMap.set(otherId, {
+                    id: otherId, // Chat ID is the other user's ID
+                    participants: [userId, otherId],
+                    lastMessage: msg.content || (msg.type === 'image' ? 'Sent an image' : 'Sent a file'),
+                    updatedAt: msg.created_at,
+                    unreadCounts: {}
+                });
+            }
+        }
+    }
+
+    // 3. ALSO fetch "Accepted" connections to ensure they appear even if no messages yet
+    const { data: connections } = await supabase
+        .from('connection_requests')
+        .select('sender_id, receiver_id, created_at')
+        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+        .eq('status', 'accepted');
+
+    if (connections) {
+        for (const conn of connections) {
+            const otherId = conn.sender_id === userId ? conn.receiver_id : conn.sender_id;
+            if (!chatsMap.has(otherId)) {
+                chatsMap.set(otherId, {
+                    id: otherId,
+                    participants: [userId, otherId],
+                    lastMessage: "Start a conversation", // Placeholder
+                    updatedAt: conn.created_at,
+                    unreadCounts: {}
+                });
+            }
+        }
+    }
+
+    const chats = Array.from(chatsMap.values());
+
+    // 4. Fetch user profiles for all these chats
+    const otherIds = chats.map(c => c.id);
+    if (otherIds.length > 0) {
+        const { data: users } = await supabase.from('user_profiles').select('*').in('id', otherIds);
+        const userMap = new Map(users?.map(u => [u.id, mapProfileToUser(u as Record<string, unknown>)]));
+
+        chats.forEach(c => {
+            c.otherUser = userMap.get(c.id);
+        });
+    }
+
+    return chats;
 };
+
 export const getChatRoom = async (userId: string, otherId: string): Promise<ChatRoom | null> => {
-    console.log("getChatRoom between", userId, otherId);
-    return null;
+    // Check if any messages exist
+    const { count } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .or(`and(sender_id.eq.${userId},receiver_id.eq.${otherId}),and(sender_id.eq.${otherId},receiver_id.eq.${userId})`);
+
+    if (!count) return null;
+
+    const otherUser = await getUserProfile(otherId);
+    return {
+        id: otherId,
+        participants: [userId, otherId],
+        updatedAt: new Date(), // Mock, would need actual last msg
+        otherUser: otherUser || undefined
+    };
 };
-export const sendMessage = async (chatId: string, senderId: string, text: string, options?: Record<string, unknown>) => {
-    console.log("sendMessage in", chatId, "by", senderId, text, options);
+
+export const sendMessage = async (chatId: string, senderId: string, text: string, options?: { type?: string, url?: string, name?: string }) => {
+    // chatId IS the receiverId in this logic
+    const receiverId = chatId;
+
+    const { error } = await supabase.from('messages').insert({
+        sender_id: senderId,
+        receiver_id: receiverId,
+        content: text,
+        type: options?.type || 'text',
+        file_url: options?.url,
+        file_name: options?.name,
+        is_read: false
+    });
+
+    if (error) throw error;
 };
+
 export const subscribeToMessages = (chatId: string, callback: (msgs: ChatMessage[]) => void) => {
-    console.log("Subscribing to chat", chatId, callback);
-    return () => { };
+    // chatId is the OTHER user's ID.
+    // We can't easily subscribe to "conversations with X" without auth context in filter.
+    // BUT we can select * from messages where (sender=Me & receiver=Other) OR (sender=Other & receiver=Me).
+    // Realtime filters are limited. simpler to subscribe to ALL public:messages and filter client side?
+    // Or just subscribe to 'messages' and filter in callback?
+    // Ideally we pass the current user ID to this function to handle filtering more securely/efficiently.
+    // LIMITATION: 'subscribe' filters must be simple equality usually. 
+
+    // Workaround: We will fetch initial and then listen to everything or use a loop. 
+    // actually, let's just use the client to get messages initially, and then subscribe.
+
+    // Hack: We need the Current User ID to filter properly inside this function, 
+    // but the signature is (chatId, callback). 
+    // We'll rely on the caller to manage refreshing or we use a global channel.
+    // Better: Allow the caller to pass existing messages? 
+    // Let's change the pattern: This function will fetch AND subscribe.
+
+    // We assume the caller knows 'chatId' is the PARTNER id.
+    // To fetch, we need OUR id. We don't have it here. 
+    // We'll assume the component handles fetching via `getChatMessages` first?
+    // The current component calls `subscribeToMessages` and expects it to do everything.
+    // We will use `supabase.auth.getUser()` to get current user.
+
+    let myId: string = "";
+
+    const fetchMessages = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        myId = user.id;
+
+        const { data } = await supabase
+            .from('messages')
+            .select('*')
+            .or(`and(sender_id.eq.${user.id},receiver_id.eq.${chatId}),and(sender_id.eq.${chatId},receiver_id.eq.${user.id})`)
+            .order('created_at', { ascending: true });
+
+        if (data) {
+            const msgs = (data as Array<Record<string, unknown>>).map((d) => ({
+                id: d.id as string,
+                senderId: d.sender_id as string,
+                text: d.content as string,
+                createdAt: d.created_at as string,
+                type: (d.type as 'text' | 'image' | 'file') || 'text',
+                fileUrl: d.file_url as string,
+                fileName: d.file_name as string
+            }));
+            callback(msgs);
+        }
+    };
+
+    fetchMessages();
+
+    const channel = supabase.channel(`chat:${chatId}`)
+        .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'messages' },
+            (payload) => {
+                const msg = payload.new as Record<string, unknown>;
+                // Check if this message belongs to this conversation
+                if (
+                    (msg.sender_id === myId && msg.receiver_id === chatId) ||
+                    (msg.sender_id === chatId && msg.receiver_id === myId)
+                ) {
+                    fetchMessages(); // Refresh all to be safe and ordered
+                }
+            }
+        )
+        .subscribe();
+
+    return () => {
+        supabase.removeChannel(channel);
+    };
 };
+
 export const getChatMessages = async (chatId: string): Promise<ChatMessage[]> => {
-    console.log("getChatMessages for", chatId);
-    return [];
+    // Typically used if not supervising?
+    // We implemented fetch inside subscribe.
+    // Leaving this for manual calls if needed.
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data } = await supabase
+        .from('messages')
+        .select('*')
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${chatId}),and(sender_id.eq.${chatId},receiver_id.eq.${user.id})`)
+        .order('created_at', { ascending: true });
+
+    if (!data) return [];
+
+    return (data as Array<Record<string, unknown>>).map((d) => ({
+        id: d.id as string,
+        senderId: d.sender_id as string,
+        text: d.content as string,
+        createdAt: d.created_at as string,
+        type: (d.type as 'text' | 'image' | 'file') || 'text',
+        fileUrl: d.file_url as string,
+        fileName: d.file_name as string
+    }));
 };
+
 export const markChatRead = async (chatId: string, userId: string) => {
-    console.log("markChatRead for", chatId, "by", userId);
+    // Set is_read = true for all messages received FROM chatId (sender) TO userId (me)
+    await supabase
+        .from('messages')
+        .update({ is_read: true })
+        .eq('sender_id', chatId)
+        .eq('receiver_id', userId)
+        .eq('is_read', false);
+
+    // Notify local listeners
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('chat-read'));
+    }
 };
+
 export const uploadChatAttachment = async (file: File, chatId: string) => {
     const path = `chats/${chatId}/${Date.now()}_${file.name}`;
     const { error } = await supabase.storage.from('images').upload(path, file);
@@ -364,13 +616,58 @@ export const uploadChatAttachment = async (file: File, chatId: string) => {
     const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(path);
     return publicUrl;
 };
+
 export const importChatDocument = async (caseId: string, lawyerId: string, msg: ChatMessage) => {
-    console.log("importChatDocument", msg.fileName, "to", caseId, "by", lawyerId);
-    return "";
+    // Create a CRM document from a chat message
+    if (!msg.fileUrl) return "";
+
+    const { error } = await supabase.from('crm_documents').insert({
+        case_id: caseId,
+        file_name: msg.fileName || 'Chat Attachment',
+        file_url: msg.fileUrl,
+        source: 'chat'
+    });
+
+    if (error) throw error;
+    return msg.fileUrl;
 };
+
 export const subscribeToUnreadCount = (userId: string, callback: (count: number) => void) => {
-    console.log("subscribeToUnreadCount for", userId);
-    callback(0); return () => { };
+    const fetchCount = async () => {
+        const { count } = await supabase
+            .from('messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('receiver_id', userId)
+            .eq('is_read', false);
+        callback(count || 0);
+    };
+
+    fetchCount();
+
+    const channel = supabase.channel(`unread:${userId}`)
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'messages', filter: `receiver_id=eq.${userId}` },
+            (payload) => {
+                console.log("Unread count update triggered by:", payload);
+                setTimeout(fetchCount, 1000); // reduced delay slightly
+            }
+        )
+        .subscribe((status) => {
+            console.log("Unread subscription status:", status);
+        });
+
+    // Listen to local "read" events to update immediately
+    const handleLocalRead = () => {
+        console.log("Local read event received, fetching count...");
+        setTimeout(fetchCount, 200); // fast update
+    };
+    window.addEventListener('chat-read', handleLocalRead);
+
+    return () => {
+        supabase.removeChannel(channel);
+        window.removeEventListener('chat-read', handleLocalRead);
+    };
 };
 
 
@@ -420,22 +717,79 @@ export const getMyClientRequests = async (clientId: string) => {
 
 
 // --- CRM ---
-export const getLawyerCases = async (lawyerId: string) => {
-    console.log("getLawyerCases for", lawyerId);
-    return [];
+export const getLawyerCases = async (lawyerId: string): Promise<Case[]> => {
+    const { data, error } = await supabase
+        .from('cases')
+        .select('*')
+        .eq('lawyer_id', lawyerId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error("Error fetching cases:", error);
+        return [];
+    }
+
+    return (data as Array<Record<string, unknown>>).map(d => ({
+        id: d.id as string,
+        clientId: d.client_id as string,
+        clientName: (d.client_name as string) || 'Unknown Client',
+        title: d.title as string,
+        status: d.status as Case['status'],
+        createdAt: d.created_at as string,
+        description: d.description as string,
+        lawyerId: d.lawyer_id as string
+    }));
 };
+
 export const createCase = async (data: Partial<Case>) => {
-    console.log("createCase", data.title);
+    const { error } = await supabase.from('cases').insert({
+        lawyer_id: data.lawyerId,
+        client_id: data.clientId,
+        client_name: data.clientName,
+        title: data.title,
+        description: data.description,
+        status: data.status || 'new'
+    });
+    if (error) throw error;
+};
+
+export const deleteChat = async (userId: string, otherId: string) => {
+    // Delete messages where (sender=Me AND receiver=Other) OR (sender=Other AND receiver=Me)
+    const { error } = await supabase
+        .from('messages')
+        .delete()
+        .or(`and(sender_id.eq.${userId},receiver_id.eq.${otherId}),and(sender_id.eq.${otherId},receiver_id.eq.${userId})`);
+
+    if (error) throw error;
 };
 export const getCaseById = async (id: string): Promise<Case | null> => {
-    console.log("getCaseById", id);
-    return null;
+    const { data, error } = await supabase.from('cases').select('*').eq('id', id).single();
+    if (error || !data) return null;
+
+    const row = data as Record<string, unknown>;
+    return {
+        id: row.id as string,
+        clientId: row.client_id as string,
+        clientName: row.client_name as string,
+        title: row.title as string,
+        status: row.status as Case['status'],
+        createdAt: row.created_at as string,
+        description: row.description as string,
+        lawyerId: row.lawyer_id as string
+    };
 };
 export const getCase = getCaseById; // Alias
 
 export const updateCase = async (id: string, data: Partial<Case>) => {
-    console.log("updateCase", id, data);
+    const updates: Record<string, unknown> = {};
+    if (data.title) updates.title = data.title;
+    if (data.status) updates.status = data.status;
+    if (data.description) updates.description = data.description;
+
+    const { error } = await supabase.from('cases').update(updates).eq('id', id);
+    if (error) throw error;
 };
+
 export const getTimeEntries = async (caseId: string): Promise<TimeEntry[]> => {
     console.log("getTimeEntries for", caseId);
     return [];
@@ -620,4 +974,52 @@ export const uploadVerificationDocument = async (uid: string, file: File) => {
     const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(path);
     await supabase.from('verification_documents').insert({ lawyer_id: uid, file_url: publicUrl, file_name: file.name });
     return { name: file.name, url: publicUrl, type: file.type || 'unknown', uploadedAt: new Date().toISOString() };
+};
+
+// --- Video Call Signaling ---
+// --- Video Call Signaling ---
+export interface CallSignal {
+    type: 'offer' | 'answer' | 'ice-candidate' | 'end-call' | 'request-call' | 'accept-call' | 'reject-call';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    payload?: any;
+    senderId: string;
+    senderName?: string;
+}
+
+export const subscribeToCallEvents = (userId: string, onSignal: (signal: CallSignal) => void) => {
+    const channel = supabase.channel(`call:${userId}`)
+        .on(
+            'broadcast',
+
+            { event: 'signal' },
+            (payload) => {
+                console.log("Received signal:", payload);
+                if (payload.payload) {
+                    onSignal(payload.payload as CallSignal);
+                }
+            }
+        )
+        .subscribe((status) => {
+            console.log(`Subscribed to call:${userId}`, status);
+        });
+
+    return () => {
+        supabase.removeChannel(channel);
+    };
+};
+
+export const signalCall = async (receiverId: string, signal: CallSignal) => {
+    // We broadcast to the RECEIVER'S channel
+    const channel = supabase.channel(`call:${receiverId}`);
+
+    await channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+            await channel.send({
+                type: 'broadcast',
+                event: 'signal',
+                payload: signal
+            });
+            supabase.removeChannel(channel);
+        }
+    });
 };

@@ -3,23 +3,31 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { subscribeToMessages, sendMessage, ChatMessage, markChatRead, uploadChatAttachment } from "@/lib/services";
-import { FaPaperPlane, FaArrowLeft, FaPaperclip, FaFile } from "react-icons/fa";
+import { subscribeToMessages, sendMessage, ChatMessage, markChatRead, uploadChatAttachment, createCase, deleteChat, getUserProfile, UserProfile } from "@/lib/services";
+import { FaPaperPlane, FaArrowLeft, FaPaperclip, FaFile, FaBriefcase, FaTrash, FaVideo } from "react-icons/fa";
+import VideoCall from "@/components/VideoCall";
 import Image from "next/image";
 
 export default function ChatPage() {
-    const { user } = useAuth();
+    const { user, userProfile } = useAuth();
     const params = useParams();
     const router = useRouter();
     const chatId = params?.id as string;
 
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [newMessage, setNewMessage] = useState("");
-    // const [otherUser, setOtherUser] = useState<UserProfile | null>(null); // This was commented out, keeping it that way.
+    const [otherUser, setOtherUser] = useState<UserProfile | null>(null);
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
+
+    // Video Call State
+    // Only "isCallActive" needed for OUTGOING calls initiated here
+    const [isCallActive, setIsCallActive] = useState(false);
+
+    // Subscribe to Call Events - REMOVED (Handled by GlobalCallManager for incoming)
+    // We still keep local state for OUTGOING calls.
 
     useEffect(() => {
         if (!user || !chatId) return;
@@ -37,15 +45,87 @@ export default function ChatPage() {
         return () => unsubscribe();
     }, [chatId, user]);
 
+    useEffect(() => {
+        if (chatId) {
+            getUserProfile(chatId).then(setOtherUser);
+        }
+    }, [chatId]);
+
+    const handleStartCall = () => {
+        setIsCallActive(true);
+    };
+
+    // Handlers for Outgoing call end
+    const handleEndCall = () => {
+        setIsCallActive(false);
+    };
+
+    const handleAddToCRM = async () => {
+        if (!user || !otherUser) return;
+
+        const name = prompt("Enter Case Title:", `Case for ${otherUser.name}`);
+        if (!name) return;
+
+        try {
+            await createCase({
+                lawyerId: user.id,
+                clientId: otherUser.uid,
+                clientName: otherUser.name,
+                title: name,
+                description: `Started from chat on ${new Date().toLocaleDateString()}`,
+                status: 'new'
+            });
+            alert("Client added to CRM successfully!");
+        } catch (error) {
+            console.error(error);
+            alert("Failed to add to CRM");
+        }
+    };
+
+    const handleDeleteChat = async () => {
+        if (!confirm("Are you sure you want to delete this chat? This action cannot be undone.")) return;
+        if (!user) return;
+
+        try {
+            await deleteChat(user.id, chatId);
+            router.push('/chat');
+        } catch (error) {
+            console.error(error);
+            alert("Failed to delete chat");
+        }
+    };
+
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newMessage.trim() || !user) return;
 
+        const tempId = 'temp-' + Date.now();
+        const optimisticMsg: ChatMessage = {
+            id: tempId,
+            senderId: user.id,
+            text: newMessage,
+            createdAt: new Date(),
+            type: 'text'
+        };
+
+        // Optimistically add message
+        setMessages(prev => [...prev, optimisticMsg]);
+        const msgToSend = newMessage;
+        setNewMessage("");
+
+        // Scroll to bottom immediately
+        setTimeout(() => {
+            scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 10);
+
         try {
-            await sendMessage(chatId, user.id, newMessage);
-            setNewMessage("");
+            await sendMessage(chatId, user.id, msgToSend);
         } catch (error) {
             console.error(error);
+            // Revert on failure
+            setMessages(prev => prev.filter(m => m.id !== tempId));
+            setNewMessage(msgToSend); // Restore text
+            alert("Failed to send message");
         }
     };
 
@@ -75,23 +155,65 @@ export default function ChatPage() {
     return (
         <div className="flex flex-col h-[calc(100vh-theme(spacing.20))] max-w-3xl mx-auto bg-white dark:bg-slate-900 shadow-sm sm:rounded-2xl sm:my-8 overflow-hidden border border-gray-100 dark:border-slate-800">
             {/* Header */}
-            <div className="bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 p-4 flex items-center gap-4 shadow-sm z-10">
-                <button onClick={() => router.back()} aria-label="Go Back" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">
-                    <FaArrowLeft />
-                </button>
-                <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 bg-primary/10 dark:bg-slate-800 rounded-full flex items-center justify-center text-primary dark:text-primary-foreground font-bold">
-                        {/* Placeholder for other user avatar */}
-                        C
-                    </div>
-                    <div>
-                        <h2 className="font-bold text-gray-900 dark:text-white">Chat</h2>
-                        <p className="text-xs text-green-500 flex items-center gap-1">
-                            <span className="block h-2 w-2 rounded-full bg-green-500"></span> Online
-                        </p>
+            <div className="bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 p-4 flex items-center justify-between shadow-sm z-10">
+                <div className="flex items-center gap-4">
+                    <button onClick={() => router.back()} aria-label="Go Back" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">
+                        <FaArrowLeft />
+                    </button>
+                    <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 bg-primary/10 dark:bg-slate-800 rounded-full flex items-center justify-center text-primary dark:text-primary-foreground font-bold overflow-hidden">
+                            {otherUser?.photoUrl ? (
+                                <Image src={otherUser.photoUrl} alt={otherUser.name} width={40} height={40} className="object-cover h-full w-full" />
+                            ) : (
+                                otherUser?.name?.[0] || "C"
+                            )}
+                        </div>
+                        <div>
+                            <h2 className="font-bold text-gray-900 dark:text-white">{otherUser?.name || "Chat"}</h2>
+                            <p className="text-xs text-green-500 flex items-center gap-1">
+                                <span className="block h-2 w-2 rounded-full bg-green-500"></span> Online
+                            </p>
+                        </div>
                     </div>
                 </div>
+                <div className="flex gap-2">
+                    {userProfile?.role === 'lawyer' && (
+                        <button
+                            onClick={handleAddToCRM}
+                            className="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1"
+                            title="Add Client to CRM"
+                        >
+                            <FaBriefcase /> CRM
+                        </button>
+                    )}
+                    <button
+                        onClick={handleDeleteChat}
+                        className="text-gray-400 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"
+                        title="Delete Conversation"
+                    >
+                        <FaTrash />
+                    </button>
+                    <button
+                        onClick={handleStartCall}
+                        className="text-gray-400 hover:text-green-500 transition-colors p-2 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20"
+                        title="Video Call"
+                    >
+                        <FaVideo />
+                    </button>
+                </div>
             </div>
+
+            {/* Video Call Overlay (For OUTGOING calls) */}
+            {isCallActive && user && (
+                <VideoCall
+                    chatId={chatId}
+                    myId={user.id}
+                    myName={userProfile?.name || user.email || "User"}
+                    isCaller={true}
+                    otherUser={otherUser}
+                    onEndCall={handleEndCall}
+                />
+            )}
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-950">

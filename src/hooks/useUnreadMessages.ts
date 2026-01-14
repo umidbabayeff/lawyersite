@@ -1,25 +1,31 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from "@/lib/auth";
+import { subscribeToUnreadCount, subscribeToIncomingRequestsCount } from "@/lib/services";
 
 
 export function useUnreadMessages() {
     const { user } = useAuth();
-    const [unreadCount] = useState(0);
+    const [msgCount, setMsgCount] = useState(0);
+    const [reqCount, setReqCount] = useState(0);
 
     useEffect(() => {
         if (!user) return;
 
-        // Stub logic until subscribeToUnreadCount is migrated
-        // const unsubscribe = subscribeToUnreadCount(user.id, (count) => {
-        //     setUnreadCount(count);
-        // });
+        const subMsg = subscribeToUnreadCount(user.id, (count) => {
+            setMsgCount(count);
+        });
+
+        const subReq = subscribeToIncomingRequestsCount(user.id, (count) => {
+            setReqCount(count);
+        });
 
         return () => {
-            // unsubscribe();
+            subMsg();
+            subReq();
         };
     }, [user]);
 
     if (!user) return 0;
 
-    return unreadCount;
+    return msgCount + reqCount;
 }

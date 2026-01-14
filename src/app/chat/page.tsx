@@ -2,32 +2,51 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { getUserChats, ChatRoom, UserProfile } from "@/lib/services";
+import { getUserChats, ChatRoom, UserProfile, getIncomingRequests, respondToConnectionRequest, ConnectionRequest } from "@/lib/services";
 import Link from "next/link";
 import Image from "next/image";
-import { FaComments } from "react-icons/fa";
+import { FaComments, FaUserPlus, FaCheck, FaTimes } from "react-icons/fa";
 import { useLanguage } from "@/lib/i18n_context";
 
 export default function ChatListPage() {
     const { user, loading } = useAuth();
     const { t } = useLanguage();
     const [chats, setChats] = useState<(ChatRoom & { otherUser?: UserProfile })[]>([]);
+    const [requests, setRequests] = useState<ConnectionRequest[]>([]);
     const [chatsLoading, setChatsLoading] = useState(true);
 
     useEffect(() => {
         if (!loading && user) {
-            getUserChats(user.id)
-                .then((data) => {
-                    setChats(data);
+            Promise.all([
+                getUserChats(user.id),
+                getIncomingRequests(user.id)
+            ])
+                .then(([chatsData, requestsData]) => {
+                    setChats(chatsData);
+                    setRequests(requestsData);
                 })
                 .catch(err => {
-                    console.error("Error fetching chats:", err);
+                    console.error("Error fetching chat data:", err);
                 })
                 .finally(() => {
                     setChatsLoading(false);
                 });
         }
     }, [user, loading]);
+
+    const handleRequest = async (id: string, status: 'accepted' | 'rejected') => {
+        try {
+            await respondToConnectionRequest(id, status);
+            setRequests(prev => prev.filter(r => r.id !== id));
+            // If accepted, refresh chat list to show new conversation
+            if (status === 'accepted' && user) {
+                const updatedChats = await getUserChats(user.id);
+                setChats(updatedChats);
+            }
+        } catch (error) {
+            console.error("Error handling request:", error);
+        }
+    };
 
     const pageLoading = loading || (!!user && chatsLoading);
 
@@ -50,7 +69,52 @@ export default function ChatListPage() {
                 <FaComments className="text-primary dark:text-primary-foreground" /> {t("chat.messages")}
             </h1>
 
-            {chats.length === 0 ? (
+            {/* Connection Requests Section */}
+            {requests.length > 0 && (
+                <div className="mb-8">
+                    <h2 className="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                        <FaUserPlus className="text-primary" /> {t("dashboard.requests.title") || "Connection Requests"}
+                        <span className="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">{requests.length}</span>
+                    </h2>
+                    <div className="space-y-2">
+                        {requests.map(req => (
+                            <div key={req.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-primary/20 dark:border-primary/20 shadow-sm flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 bg-primary/10 dark:bg-slate-800 rounded-full flex items-center justify-center text-primary dark:text-primary-foreground font-bold border border-primary/10">
+                                        {req.senderPhotoUrl ? (
+                                            <Image src={req.senderPhotoUrl} alt={req.senderName || "?"} width={40} height={40} className="rounded-full object-cover h-full w-full" />
+                                        ) : (
+                                            req.senderName?.[0] || "?"
+                                        )}
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-gray-900 dark:text-white">{req.senderName || "Unknown User"}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">Wants to connect with you</p>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => handleRequest(req.id, 'accepted')}
+                                        className="bg-primary text-primary-foreground p-2 rounded-lg hover:bg-primary/90 transition-colors"
+                                        title={t("dashboard.requests.accept")}
+                                    >
+                                        <FaCheck size={14} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleRequest(req.id, 'rejected')}
+                                        className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                        title={t("dashboard.requests.reject")}
+                                    >
+                                        <FaTimes size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {(chats.length === 0 && requests.length === 0) ? (
                 <div className="text-center py-12 bg-gray-50 dark:bg-slate-900 rounded-2xl border border-dashed border-gray-200 dark:border-slate-800">
                     <p className="text-gray-500 dark:text-gray-400 mb-4">{t("chat.noMessages")}</p>
                     <Link href="/" className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors shadow-sm font-medium text-sm">
