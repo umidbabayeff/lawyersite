@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { FaMicrophone, FaMicrophoneSlash, FaPhoneSlash, FaVideo, FaVideoSlash } from "react-icons/fa";
-import { CallSignal, signalCall, subscribeToCallEvents } from "@/lib/services"; // We will update imports
+import { CallSignal, signalCall, subscribeToCallEvents, CallState } from "@/lib/services";
 import { UserProfile } from "@/lib/services";
 
 interface VideoCallProps {
@@ -29,12 +29,17 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
     const [isMuted, setIsMuted] = useState(false);
     const [isVideoOff, setIsVideoOff] = useState(false);
-    const [status, setStatus] = useState(isCaller ? "Calling..." : "Connecting...");
+
+    // Strict State Machine
+    const [callState, setCallState] = useState<CallState>(isCaller ? CallState.CALLING : CallState.RINGING);
+    // Optional: End reason for UI clarity (e.g. "User Busy")
+    const [endReason, setEndReason] = useState<string | null>(null);
 
     const localVideoRef = useRef<HTMLVideoElement>(null);
     const remoteVideoRef = useRef<HTMLVideoElement>(null);
     const peerRef = useRef<RTCPeerConnection | null>(null);
 
+    // ... (rest of refs) ...
     // Queue for candidates arriving before remote description
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const pendingCandidates = useRef<any[]>([]);
@@ -58,6 +63,7 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
 
         // Helper to process queued candidates
         const processPendingCandidates = async () => {
+            // ... (kept same)
             if (peer.signalingState === 'closed') return;
             addLog(`Processing ${pendingCandidates.current.length} queued candidates`);
             while (pendingCandidates.current.length > 0) {
@@ -71,37 +77,34 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
             }
         };
 
-        // Handle ICE candidates (Sending)
-        // Batch mechanism to prevent spamming Supabase too quickly
-
+        // ... (flushIceBatch kept same) ...
         const flushIceBatch = () => {
+            // ...
             if (iceBatch.current.length === 0) return;
 
             const batch = [...iceBatch.current];
             iceBatch.current = [];
 
-            // Send each one (or ideally send as array, but our protocol handles single)
-            // For now, let's keep protocol simple but delay the sends:
             batch.forEach((cand, index) => {
                 setTimeout(() => {
                     addLog(`Sending ICE candidate (${cand.type})`);
                     signalCall(chatId, { type: 'ice-candidate', payload: cand, senderId: myId });
-                }, index * 50); // Small stagger
+                }, index * 50);
             });
         };
 
         peer.onicecandidate = (event) => {
+            // ... (kept same)
             if (event.candidate) {
                 const candidateStr = event.candidate.candidate;
                 if (candidateStr.includes('127.0.0.1') || candidateStr.includes('::1') || candidateStr.includes('0.0.0.0')) {
-                    // Just log warning, but still send (local dev might need it)
                     addLog("⚠️ 'localhost' candidate detected.");
                 }
 
                 iceBatch.current.push(event.candidate);
 
                 if (iceBatchTimeout.current) clearTimeout(iceBatchTimeout.current);
-                iceBatchTimeout.current = setTimeout(flushIceBatch, 500); // Wait 500ms for more
+                iceBatchTimeout.current = setTimeout(flushIceBatch, 500);
             } else {
                 addLog("Finished gathering ICE candidates. Flushing remaining.");
                 flushIceBatch();
@@ -113,9 +116,10 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
             addLog(`Remote track received: ${event.track.kind} (${event.track.enabled ? 'enabled' : 'disabled'})`);
             const remoteStream = event.streams[0] || new MediaStream([event.track]);
             setRemoteStream(remoteStream);
-            setStatus("Connected");
+            setCallState(CallState.CONNECTED);
         };
 
+        // ... (iceConnectionState kept same) ...
         peer.oniceconnectionstatechange = () => {
             addLog(`ICE State: ${peer.iceConnectionState}`);
             setIceState(peer.iceConnectionState);
@@ -128,17 +132,15 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
             }
         };
 
-        // Pre-fill queue with prop-buffered candidates (for Receiver)
         if (bufferedCandidates && bufferedCandidates.length > 0) {
             addLog(`Buffered candidates from props: ${bufferedCandidates.length}`);
             pendingCandidates.current.push(...bufferedCandidates);
         }
 
-        // Subscribe to signaling events for THIS active call
         const unsubscribe = subscribeToCallEvents(myId, async (signal: CallSignal) => {
+            // ... (log kept) ...
             addLog(`Signal raw: ${signal.type} from ${signal.senderId}`);
 
-            // Filter: Ignore signals not from our peer
             if (signal.senderId !== chatId) {
                 addLog(`⚠️ Ignored signal from mismatched ID: ${signal.senderId} (Expected: ${chatId})`);
                 return;
@@ -151,17 +153,18 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
                     onEndCall();
                 } else if (signal.type === 'busy') {
                     addLog("User is busy");
-                    setStatus("User is busy 🚫");
-                    // Delay ending so user can see message
+                    setCallState(CallState.ENDED);
+                    setEndReason("User is busy 🚫");
                     setTimeout(onEndCall, 2000);
                 } else if (signal.type === 'missed-call') {
                     addLog("Call missed/timeout");
-                    setStatus("No answer 🔇");
+                    setCallState(CallState.ENDED);
+                    setEndReason("No answer 🔇");
                     setTimeout(onEndCall, 2000);
                 } else if (signal.type === 'ice-candidate') {
-                    // Critical: Only add if remote description is set. Otherwise queue.
+                    // ... (kept same) ...
                     if (peer.remoteDescription) {
-                        addLog(`Adding ICE candidate (${signal.payload.candidate.split(' ')[4]})`); // Log the IP part
+                        addLog(`Adding ICE candidate (${signal.payload.candidate.split(' ')[4]})`);
                         try {
                             await peer.addIceCandidate(new RTCIceCandidate(signal.payload));
                         } catch (e) { addLog("Error adding candidate: " + e); }
@@ -170,62 +173,56 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
                         pendingCandidates.current.push(signal.payload);
                     }
                 } else if (signal.type === 'answer' && isCaller) {
+                    // ... (kept same) ...
                     addLog("Setting Remote Desc (Answer)");
                     await peer.setRemoteDescription(new RTCSessionDescription(signal.payload));
                     if ((peer.signalingState as string) === 'closed') return;
-                    await processPendingCandidates(); // Flush queue
+                    await processPendingCandidates();
                 }
             } catch (e) {
                 addLog(`Error signal ${signal.type}: ${e}`);
             }
         });
 
-        // Start Media and Negotiation
         const setupMediaAndSignaling = async () => {
             try {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    setStatus("Error: HTTPS/Localhost required");
+                    setEndReason("Error: HTTPS/Localhost required");
                     addLog("Error: No mediaDevices");
                     alert("Camera blocked. Use localhost or HTTPS.");
                     return;
                 }
-
+                // ... (kept same) ...
                 addLog("Requesting User Media...");
                 const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 addLog(`Got Local Stream: ${localStream.getTracks().length} tracks`);
 
-                // Check if peer was closed during the await (e.g. user cancelled/unmounted)
                 if ((peer.signalingState as string) === 'closed') {
-                    console.log("Peer closed while getting media, aborting.");
-                    localStream.getTracks().forEach(t => t.stop()); // Stop the stream we just got
+                    localStream.getTracks().forEach(t => t.stop());
                     return;
                 }
 
                 setStream(localStream);
                 if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
 
-                // Add tracks to peer
                 localStream.getTracks().forEach(track => {
                     peer.addTrack(track, localStream);
                     addLog(`Added local track: ${track.kind}`);
                 });
 
-                // Negotiation Logic
                 if (isCaller) {
                     addLog("Creating Offer...");
                     const offer = await peer.createOffer();
-                    if ((peer.signalingState as string) === 'closed') return; // Double check
+                    if ((peer.signalingState as string) === 'closed') return;
                     await peer.setLocalDescription(offer);
                     addLog("Local Desc Set (Offer)");
                     await signalCall(chatId, { type: 'offer', payload: offer, senderId: myId, senderName: myName });
                     addLog("Sent Offer");
                 } else if (incomingSignal?.type === 'offer') {
-                    // We are answering
                     addLog("Setting Remote Desc (Offer)");
                     await peer.setRemoteDescription(new RTCSessionDescription(incomingSignal.payload));
                     if ((peer.signalingState as string) === 'closed') return;
 
-                    // Process candidates that were queued (from prop + any that arrived just now)
                     await processPendingCandidates();
 
                     addLog("Creating Answer...");
@@ -235,11 +232,15 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
                     addLog("Local Desc Set (Answer)");
                     await signalCall(chatId, { type: 'answer', payload: answer, senderId: myId });
                     addLog("Sent Answer");
+                    // Update state to connected if we just answered? 
+                    // Technically we are still connecting until ICE completes, but 'CONNECTED' roughly means 'Accepted' in this context
+                    // But 'ontrack' is the real source of truth for "Seeing Video".
+                    // Let's keep it as is (Connecting -> Connected on track).
                 }
             } catch (err) {
                 console.error("Error prioritizing media:", err);
                 addLog(`Setup Error: ${err}`);
-                setStatus("Failed to access media");
+                setEndReason("Failed to access media");
             }
         };
 
@@ -334,7 +335,9 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
                         <div className="h-24 w-24 rounded-full bg-gray-800 flex items-center justify-center text-4xl font-bold text-white">
                             {otherUser?.name?.[0] || "?"}
                         </div>
-                        <p className="text-white text-xl animate-pulse">{status}</p>
+                        <p className="text-white text-xl animate-pulse">
+                            {endReason || (callState === CallState.CALLING ? "Calling..." : "Connecting...")}
+                        </p>
                     </div>
                 )}
 
@@ -350,7 +353,7 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
                 </div>
 
                 {/* Secure Origin / Media Error Help */}
-                {status.includes("Error: HTTPS") && (
+                {endReason?.includes("Error: HTTPS") && (
                     <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 p-8 text-center overflow-y-auto">
                         <div className="bg-gray-900 border border-blue-500 p-6 rounded-xl max-w-lg w-full text-left">
                             <h3 className="text-xl font-bold text-blue-400 mb-4">📸 Camera Access Blocked</h3>
