@@ -149,6 +149,15 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
             try {
                 if (signal.type === 'end-call') {
                     onEndCall();
+                } else if (signal.type === 'busy') {
+                    addLog("User is busy");
+                    setStatus("User is busy 🚫");
+                    // Delay ending so user can see message
+                    setTimeout(onEndCall, 2000);
+                } else if (signal.type === 'missed-call') {
+                    addLog("Call missed/timeout");
+                    setStatus("No answer 🔇");
+                    setTimeout(onEndCall, 2000);
                 } else if (signal.type === 'ice-candidate') {
                     // Critical: Only add if remote description is set. Otherwise queue.
                     if (peer.remoteDescription) {

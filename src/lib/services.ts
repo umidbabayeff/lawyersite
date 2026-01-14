@@ -979,7 +979,7 @@ export const uploadVerificationDocument = async (uid: string, file: File) => {
 // --- Video Call Signaling ---
 // --- Video Call Signaling ---
 export interface CallSignal {
-    type: 'offer' | 'answer' | 'ice-candidate' | 'end-call' | 'request-call' | 'accept-call' | 'reject-call';
+    type: 'offer' | 'answer' | 'ice-candidate' | 'end-call' | 'request-call' | 'accept-call' | 'reject-call' | 'busy' | 'missed-call';
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     payload?: any;
     senderId: string;

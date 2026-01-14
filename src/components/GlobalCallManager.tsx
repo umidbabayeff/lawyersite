@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/lib/auth";
-import { CallSignal, subscribeToCallEvents, getUserProfile, UserProfile } from "@/lib/services";
+import { CallSignal, subscribeToCallEvents, getUserProfile, UserProfile, signalCall } from "@/lib/services";
 import VideoCall from "./VideoCall";
 import Image from "next/image";
 
@@ -14,18 +14,7 @@ export default function GlobalCallManager() {
     const [incomingSignal, setIncomingSignal] = useState<CallSignal | undefined>(undefined);
     const [callerProfile, setCallerProfile] = useState<UserProfile | null>(null);
 
-    // If we are starting a call, we need to know who we are calling. 
-    // Usually, we start a call from a Chat Page. 
-    // The Chat Page should tell US to start the call.
-    // For now, let's keep "Start Call" logic in ChatPage, BUT ChatPage should communicate with this Manager?
-    // OR: Chat Page just renders VideoCall?
-    // Problem: If I navigate away from Chat Page during a call, the call dies.
-    // Ideally, Call Manager handles ALL calls.
-
-    // SIMPLE FIX FIRST: Call Manager handles INCOMING calls.
-    // OUTGOING calls are still handled by Chat Page for now (unless we move that too).
-    // If we want persistent calls during navigation, we MUST move outgoing to here.
-    // Let's focus on INCOMING first as that's the user complaint.
+    // ... (comments kept)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [iceCandidates, setIceCandidates] = useState<any[]>([]);
@@ -39,6 +28,22 @@ export default function GlobalCallManager() {
         isIncomingCallRef.current = isIncomingCall;
     }, [isCallActive, isIncomingCall]);
 
+    // Timeout Logic: Auto-reject after 30s
+    useEffect(() => {
+        let timeout: NodeJS.Timeout;
+        if (isIncomingCall && incomingSignal) {
+            timeout = setTimeout(() => {
+                console.log("GlobalCallManager: Call timed out (30s). Auto-rejecting.");
+                // Notify caller it was missed
+                if (user && incomingSignal.senderId) {
+                    signalCall(incomingSignal.senderId, { type: 'missed-call', senderId: user.id });
+                }
+                handleRejectCall();
+            }, 30000);
+        }
+        return () => clearTimeout(timeout);
+    }, [isIncomingCall, incomingSignal, user]);
+
     useEffect(() => {
         if (!user) return;
 
@@ -48,7 +53,9 @@ export default function GlobalCallManager() {
 
             if (signal.type === 'offer') {
                 if (isCallActiveRef.current) {
-                    console.log("GlobalCallManager: Ignoring offer (Call active)");
+                    console.log("GlobalCallManager: Auto-rejecting offer (Busy)");
+                    // Send busy signal
+                    signalCall(signal.senderId, { type: 'busy', senderId: user.id });
                     return;
                 }
 
