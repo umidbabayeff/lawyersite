@@ -297,11 +297,6 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
 
     return (
         <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center">
-            {/* Debug Overlay */}
-            <div className="absolute top-4 left-4 bg-black/50 text-green-400 text-xs p-2 rounded z-50 pointer-events-none max-w-sm overflow-hidden font-mono">
-                {debugLogs.map((log, i) => <div key={i}>{log}</div>)}
-            </div>
-
             <div className="relative w-full max-w-4xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-gray-800">
                 {/* Remote Video */}
                 <video
