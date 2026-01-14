@@ -986,31 +986,38 @@ export interface CallSignal {
     senderName?: string;
 }
 
-export const subscribeToCallEvents = (userId: string, onSignal: (signal: CallSignal) => void) => {
+export const subscribeToCallEvents = (userId: string, callback: (signal: CallSignal) => void) => {
+    console.log(`📡 Subscribing to call channel: call:${userId}`);
     const channel = supabase.channel(`call:${userId}`)
         .on(
             'broadcast',
-
             { event: 'signal' },
             (payload) => {
-                console.log("Received signal:", payload);
+                console.log("📡 Signal Received:", payload);
                 if (payload.payload) {
-                    onSignal(payload.payload as CallSignal);
+                    callback(payload.payload as CallSignal);
                 }
             }
         )
         .subscribe((status) => {
-            console.log(`Subscribed to call:${userId}`, status);
+            console.log(`📡 Subscription status for call:${userId}:`, status);
         });
 
     return () => {
+        console.log(`Unsubscribing from call:${userId}`);
         supabase.removeChannel(channel);
     };
 };
 
 export const signalCall = async (receiverId: string, signal: CallSignal) => {
-    // We broadcast to the RECEIVER'S channel
+    console.log(`📡 Sending signal to call:${receiverId}`, signal.type);
+
+    // We must send to the RECEIVER's channel
     const channel = supabase.channel(`call:${receiverId}`);
+
+    // We need to ensure subscription before sending? 
+    // Actually for broadcast to work reliably, usually we just publish to the channel.
+    // However, Supabase requires you to subscribe to a channel to broadcast to it.
 
     await channel.subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
@@ -1019,7 +1026,12 @@ export const signalCall = async (receiverId: string, signal: CallSignal) => {
                 event: 'signal',
                 payload: signal
             });
-            supabase.removeChannel(channel);
+            // We can unsubscribe after sending, but keeping it cached is often better 
+            // supabase client handles caching.
+            console.log(`📡 Signal sent successfully to call:${receiverId}`);
+            // supabase.removeChannel(channel); // Cleanup?
+        } else {
+            console.error(`📡 Failed to subscribe/send to call:${receiverId} status:`, status);
         }
     });
 };

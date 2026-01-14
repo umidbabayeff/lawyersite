@@ -206,7 +206,7 @@ export default function ChatPage() {
             {/* Video Call Overlay (For OUTGOING calls) */}
             {isCallActive && user && (
                 <VideoCall
-                    chatId={chatId}
+                    chatId={otherUser?.uid || chatId}
                     myId={user.id}
                     myName={userProfile?.name || user.email || "User"}
                     isCaller={true}
