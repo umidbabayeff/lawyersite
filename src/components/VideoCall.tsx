@@ -437,6 +437,22 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
                         onClick={() => {
                             // End call signal
                             signalCall(chatId, { type: 'end-call', senderId: myId });
+
+                            // Log if we were connected and we are the caller (Simple rule to avoid dupes)
+                            // OR: Whoever hangs up logs it?
+                            // If I hang up, I send 'end-call'. The OTHER person receives 'end-call'.
+                            // In the 'end-call' handler above, I added logging for the RECEIVER of the signal (if isCaller).
+                            // What if I AM the caller and I hang up?
+                            // I need to log it here.
+
+                            if (callState === CallState.CONNECTED && isCaller) {
+                                sendMessage(chatId, myId, "Video Call Ended", { type: 'call_log' });
+                            }
+                            // If I am NOT the caller (I am receiver) and I hang up:
+                            // The OTHER person (Caller) receives 'end-call'.
+                            // Their handler (above) checks `if (isCaller)`. It is true. They log it.
+                            // perfect.
+
                             onEndCall();
                         }}
                         className="p-4 rounded-full bg-red-500 hover:bg-red-600 transition-colors"

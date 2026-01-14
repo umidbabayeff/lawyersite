@@ -53,7 +53,7 @@ export interface ChatMessage {
     senderId: string;
     text: string;
     createdAt: string | Date;
-    type?: 'text' | 'image' | 'file';
+    type?: 'text' | 'image' | 'file' | 'call_log';
     fileUrl?: string;
     fileName?: string;
 }

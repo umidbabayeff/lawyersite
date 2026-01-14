@@ -238,8 +238,15 @@ export default function ChatPage() {
                                             <span className="text-xs underline truncate max-w-[150px]">{msg.fileName || 'Document'}</span>
                                         </a>
                                     </div>
+                                ) : msg.type === 'call_log' ? (
+                                    <div className="flex items-center gap-2 justify-center py-1">
+                                        <div className={`p-1.5 rounded-full ${msg.text.includes("Missed") || msg.text.includes("busy") ? 'bg-red-100 text-red-500' : 'bg-gray-100 text-gray-500'}`}>
+                                            {msg.text.includes("Missed") || msg.text.includes("busy") ? <FaPhoneSlash size={12} /> : <FaVideo size={12} />}
+                                        </div>
+                                        <span className="italic font-medium text-gray-500 dark:text-gray-400">{msg.text}</span>
+                                    </div>
                                 ) : null}
-                                <p className="text-sm">{msg.text}</p>
+                                {msg.type !== 'call_log' && <p className="text-sm">{msg.text}</p>}
                                 <p className={`text-[10px] mt-1 text-right ${isMe ? 'text-primary-foreground/70' : 'text-gray-400 dark:text-gray-500'}`}>
                                     {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}
                                 </p>
