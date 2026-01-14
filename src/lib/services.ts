@@ -3,6 +3,8 @@ import { createClient } from './supabase/client';
 
 const supabase = createClient();
 
+
+
 // --- Types ---
 export type UserRole = 'client' | 'lawyer' | 'admin';
 
@@ -232,7 +234,9 @@ export const createLawyerProfile = updateLawyerProfile;
 
 export const getVerifiedLawyers = async (): Promise<LawyerProfile[]> => {
     const { data } = await supabase.from('lawyer_profiles').select('*, user_profiles (*)').eq('verified', true);
+
     if (!data) return [];
+
     return (data as Array<Record<string, unknown>>).map((d) => ({
         ...mapProfileToUser(d.user_profiles as Record<string, unknown>),
         specializations: d.specializations as string[] || [],
@@ -246,11 +250,15 @@ export const getVerifiedLawyers = async (): Promise<LawyerProfile[]> => {
 
 // --- Favorites ---
 export const toggleFavorite = async (userId: string, lawyerId: string, isFavorite: boolean) => {
+    let error;
     if (isFavorite) {
-        await supabase.from('favorites').delete().match({ user_id: userId, lawyer_id: lawyerId });
+        const res = await supabase.from('favorites').delete().match({ user_id: userId, lawyer_id: lawyerId });
+        error = res.error;
     } else {
-        await supabase.from('favorites').insert({ user_id: userId, lawyer_id: lawyerId });
+        const res = await supabase.from('favorites').insert({ user_id: userId, lawyer_id: lawyerId });
+        error = res.error;
     }
+    if (error) throw error;
 };
 
 export const getFavoriteLawyers = async (userId: string) => {
@@ -445,11 +453,12 @@ export const getAllLawyersForAdmin = async (): Promise<LawyerProfile[]> => {
     }));
 };
 
-export const toggleLawyerVerification = async (uid: string, status: boolean) => { // status is current status, so we flip it? No, usually UI passes current or target. 
+export const toggleLawyerVerification = async (uid: string, status: boolean) => {
     // AdminPage calls: handleVerify(lawyer.uid, lawyer.verified) -> toggleLawyerVerification(uid, status)
     // And logic is: {lawyer.verified ? 'Unverify' : 'Verify'}
     // So the UI passes the CURRENT status. We should flip it.
-    await supabase.from('lawyer_profiles').update({ verified: !status }).eq('id', uid);
+    const { error } = await supabase.from('lawyer_profiles').update({ verified: !status }).eq('id', uid);
+    if (error) throw error;
 };
 export const getSiteSettings = async (): Promise<SiteSettings> => {
     return {
