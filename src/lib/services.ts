@@ -167,9 +167,19 @@ export const createUserProfile = async (uid: string, data: Partial<UserProfile>)
 };
 
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
+
+    // Fetch profile
     const { data, error } = await supabase.from('user_profiles').select('*').eq('id', uid).single();
     if (error) return null;
-    return mapProfileToUser(data as Record<string, unknown>);
+
+    // Fetch favorites
+    const { data: favs } = await supabase.from('favorites').select('lawyer_id').eq('user_id', uid);
+    const favoriteIds = favs ? favs.map((f: { lawyer_id: string }) => f.lawyer_id) : [];
+
+    return {
+        ...mapProfileToUser(data as Record<string, unknown>),
+        favorites: favoriteIds
+    };
 };
 
 export const updateUserProfile = async (uid: string, data: Partial<UserProfile>) => {
@@ -261,9 +271,34 @@ export const toggleFavorite = async (userId: string, lawyerId: string, isFavorit
     if (error) throw error;
 };
 
-export const getFavoriteLawyers = async (userId: string) => {
-    console.log("getFavoriteLawyers for", userId);
-    return [];
+export const getFavoriteLawyers = async (userId: string): Promise<LawyerProfile[]> => {
+    const { data } = await supabase
+        .from('favorites')
+        .select(`
+            lawyer_id,
+            lawyer:lawyer_profiles (
+                *,
+                user_profiles (*)
+            )
+        `)
+        .eq('user_id', userId);
+
+    if (!data) return [];
+
+    return data.map((item: any) => {
+        const l = item.lawyer;
+        if (!l) return null;
+
+        return {
+            ...mapProfileToUser(l.user_profiles),
+            specializations: l.specializations || [],
+            description: l.description || '',
+            price: Number(l.price) || 0,
+            verified: l.verified || false,
+            rating: Number(l.rating) || 0,
+            bannerUrl: l.banner_url
+        };
+    }).filter(Boolean) as LawyerProfile[];
 };
 
 
