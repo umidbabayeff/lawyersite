@@ -413,16 +413,43 @@ export const uploadCRMDocument = async (file: File, caseId: string, lawyerId: st
 
 
 // --- Admin / Setup ---
-export const getAllUsers = async () => { return []; };
+// --- Admin / Setup ---
+export const getAllUsers = async (): Promise<UserProfile[]> => {
+    const { data } = await supabase.from('user_profiles').select('*');
+    if (!data) return [];
+    return (data as Array<Record<string, unknown>>).map(mapProfileToUser);
+};
+
 export const updateUserRole = async (uid: string, role: string) => {
     await supabase.from('user_profiles').update({ role }).eq('id', uid);
 };
+
 export const deleteUser = async (uid: string) => {
-    console.log("deleteUser", uid);
+    await supabase.from('user_profiles').delete().eq('id', uid);
+    // Trigger should handle cascade, or RLS might block. Best effort for now.
+    // Ideally use Supabase Admin API for full delete, but client side we can only delete public profile if allowed.
 };
-export const getAllLawyersForAdmin = async () => { return []; };
-export const toggleLawyerVerification = async (uid: string, status: boolean) => {
-    console.log("toggleLawyerVerification", uid, status);
+
+export const getAllLawyersForAdmin = async (): Promise<LawyerProfile[]> => {
+    const { data } = await supabase.from('lawyer_profiles').select('*, user_profiles (*)');
+    if (!data) return [];
+    return (data as Array<Record<string, unknown>>).map((d) => ({
+        ...mapProfileToUser(d.user_profiles as Record<string, unknown>),
+        specializations: d.specializations as string[] || [],
+        description: d.description as string || '',
+        price: Number(d.price) || 0,
+        verified: d.verified as boolean || false,
+        rating: Number(d.rating) || 0,
+        bannerUrl: d.banner_url as string,
+        verificationDocuments: [] // Fetching docs for list might be heavy, skipping for list view
+    }));
+};
+
+export const toggleLawyerVerification = async (uid: string, status: boolean) => { // status is current status, so we flip it? No, usually UI passes current or target. 
+    // AdminPage calls: handleVerify(lawyer.uid, lawyer.verified) -> toggleLawyerVerification(uid, status)
+    // And logic is: {lawyer.verified ? 'Unverify' : 'Verify'}
+    // So the UI passes the CURRENT status. We should flip it.
+    await supabase.from('lawyer_profiles').update({ verified: !status }).eq('id', uid);
 };
 export const getSiteSettings = async (): Promise<SiteSettings> => {
     return {
@@ -481,19 +508,23 @@ export const seedDatabase = async () => {
                 avatar_url: lawyer.avatar_url
             });
 
-            if (!profileError) {
-                await supabase.from('lawyer_profiles').upsert({
-                    id: lawyer.id,
-                    specializations: lawyer.specializations,
-                    description: lawyer.description,
-                    price: lawyer.price,
-                    verified: lawyer.verified,
-                    rating: lawyer.rating,
-                    banner_url: lawyer.banner_url
-                });
-            }
+            if (profileError) throw profileError;
+
+            const { error: lawyerError } = await supabase.from('lawyer_profiles').upsert({
+                id: lawyer.id,
+                specializations: lawyer.specializations,
+                description: lawyer.description,
+                price: lawyer.price,
+                verified: lawyer.verified,
+                rating: lawyer.rating,
+                banner_url: lawyer.banner_url
+            });
+
+            if (lawyerError) throw lawyerError;
+
         } catch (err) {
             console.error("Error seeding lawyer:", lawyer.full_name, err);
+            throw err; // Rethrow to notify caller
         }
     }
     console.log("Seed attempt completed.");
