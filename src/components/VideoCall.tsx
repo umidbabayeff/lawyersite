@@ -69,20 +69,42 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
             }
         };
 
-        // Handle ICE candidates
+        // Handle ICE candidates (Sending)
+        // Batch mechanism to prevent spamming Supabase too quickly
+        const iceBatch = useRef<RTCIceCandidate[]>([]);
+        const iceBatchTimeout = useRef<NodeJS.Timeout | null>(null);
+
+        const flushIceBatch = () => {
+            if (iceBatch.current.length === 0) return;
+
+            const batch = [...iceBatch.current];
+            iceBatch.current = [];
+
+            // Send each one (or ideally send as array, but our protocol handles single)
+            // For now, let's keep protocol simple but delay the sends:
+            batch.forEach((cand, index) => {
+                setTimeout(() => {
+                    addLog(`Sending ICE candidate (${cand.type})`);
+                    signalCall(chatId, { type: 'ice-candidate', payload: cand, senderId: myId });
+                }, index * 50); // Small stagger
+            });
+        };
+
         peer.onicecandidate = (event) => {
             if (event.candidate) {
                 const candidateStr = event.candidate.candidate;
                 if (candidateStr.includes('127.0.0.1') || candidateStr.includes('::1') || candidateStr.includes('0.0.0.0')) {
-                    addLog("⚠️ WARNING: You are broadcasting 'localhost' IP!");
-                    addLog("Remote cannot connect to this.");
-                    addLog("👉 Open this site via your LAN IP (e.g. 192.168.x.x) instead of localhost.");
+                    // Just log warning, but still send (local dev might need it)
+                    addLog("⚠️ 'localhost' candidate detected.");
                 }
 
-                addLog(`Sending ICE candidate (${event.candidate.type})`);
-                signalCall(chatId, { type: 'ice-candidate', payload: event.candidate, senderId: myId });
+                iceBatch.current.push(event.candidate);
+
+                if (iceBatchTimeout.current) clearTimeout(iceBatchTimeout.current);
+                iceBatchTimeout.current = setTimeout(flushIceBatch, 500); // Wait 500ms for more
             } else {
-                addLog("Finished gathering ICE candidates");
+                addLog("Finished gathering ICE candidates. Flushing remaining.");
+                flushIceBatch();
             }
         };
 
