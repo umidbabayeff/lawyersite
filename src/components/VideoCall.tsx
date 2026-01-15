@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { FaMicrophone, FaMicrophoneSlash, FaPhoneSlash, FaVideo, FaVideoSlash } from "react-icons/fa";
-import { CallSignal, signalCall, subscribeToCallEvents, CallState } from "@/lib/services";
+import { CallSignal, signalCall, subscribeToCallEvents, CallState, sendMessage } from "@/lib/services";
 import { UserProfile } from "@/lib/services";
 
 interface VideoCallProps {
