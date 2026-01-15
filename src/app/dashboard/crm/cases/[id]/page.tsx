@@ -183,15 +183,23 @@ export default function CaseDetailPage() {
 
     const handleMoveExecute = async (targetFolderId: string | null) => {
         if (!moveToItem) return;
-        if (targetFolderId === moveToItem.id) return; // Can't move into self
+        console.log(`[handleMoveExecute] Moving ${moveToItem.fileName} (${moveToItem.id}) to ${targetFolderId}`);
+
+        if (targetFolderId === moveToItem.id) {
+            alert("Cannot move a folder into itself.");
+            return;
+        }
 
         try {
             await moveCRMDocument(moveToItem.id, targetFolderId);
+            console.log("[handleMoveExecute] Move completed, reloading documents...");
             setMoveToItem(null);
             loadDocuments();
-        } catch (e) {
-            console.error(e);
-            alert("Failed to move item");
+            // Force a slight delay and reload again just in case of propagation delay
+            setTimeout(loadDocuments, 500);
+        } catch (e: any) {
+            console.error("[handleMoveExecute] Failed:", e);
+            alert(`Failed to move item: ${e.message || "Unknown error"}`);
         }
     };
 

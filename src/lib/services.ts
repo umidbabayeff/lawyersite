@@ -953,11 +953,19 @@ export const uploadCRMDocument = async (file: File, caseId: string, parentId: st
 };
 
 export const moveCRMDocument = async (docId: string, newParentId: string | null) => {
-    const { error } = await supabase
+    console.log(`[moveCRMDocument] Moving ${docId} to ${newParentId}`);
+    const { data, error } = await supabase
         .from('crm_documents')
         .update({ parent_id: newParentId })
-        .eq('id', docId);
-    if (error) throw error;
+        .eq('id', docId)
+        .select();
+
+    if (error) {
+        console.error("[moveCRMDocument] Error:", error);
+        throw error;
+    }
+    console.log("[moveCRMDocument] Success:", data);
+    return data;
 };
 
 export const getAllCRMFolders = async (caseId: string): Promise<CRMDocument[]> => {
