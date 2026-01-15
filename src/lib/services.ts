@@ -865,8 +865,24 @@ export const stopTimeEntry = async (entryId: string, rate: number) => {
     console.log("stopTimeEntry", entryId, "with rate", rate);
 };
 export const getCRMDocuments = async (caseId: string): Promise<CRMDocument[]> => {
-    console.log("getCRMDocuments for", caseId);
-    return [];
+    const { data, error } = await supabase
+        .from('crm_documents')
+        .select('*')
+        .eq('case_id', caseId)
+        .order('uploaded_at', { ascending: false });
+
+    if (error) {
+        console.error("Error fetching CRM documents:", error);
+        return [];
+    }
+
+    return (data as Array<Record<string, unknown>>).map(d => ({
+        id: d.id as string,
+        fileName: d.file_name as string,
+        fileUrl: d.file_url as string,
+        uploadedAt: d.uploaded_at as string,
+        source: (d.source as 'chat' | 'upload') || 'upload'
+    }));
 };
 export const uploadCRMDocument = async (file: File, caseId: string) => {
     const path = `crm/${caseId}/${Date.now()}_${file.name}`;
