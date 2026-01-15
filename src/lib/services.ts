@@ -818,22 +818,30 @@ export const getCaseByClient = async (lawyerId: string, clientId: string): Promi
 };
 
 export const importChatFilesToCRM = async (caseId: string, chatId: string, lawyerId: string) => {
+    console.log(`Importing files to Case ${caseId} from Chat ${chatId} (Lawyer: ${lawyerId})`);
+
     // 1. Get all file messages in this chat
-    const { data: messages } = await supabase
+    const { data: messages, error: fetchError } = await supabase
         .from('messages')
         .select('*')
         .or(`and(sender_id.eq.${lawyerId},receiver_id.eq.${chatId}),and(sender_id.eq.${chatId},receiver_id.eq.${lawyerId})`)
         .in('type', ['file', 'image'])
         .not('file_url', 'is', null);
 
-    if (!messages || messages.length === 0) return 0;
+    if (fetchError) {
+        console.error("Error fetching messages for import:", fetchError);
+        throw fetchError;
+    }
+
+    if (!messages || messages.length === 0) {
+        console.log("No files found to import.");
+        return 0;
+    }
+
+    console.log(`Found ${messages.length} files. Importing...`);
 
     let count = 0;
     for (const msg of messages) {
-        // Check if already exists in crm_documents to avoid duplicates?
-        // For simplicity, we'll just try to insert. 
-        // Ideally we check `file_url` uniqueness per case.
-
         const { error } = await supabase.from('crm_documents').insert({
             case_id: caseId,
             file_name: msg.file_name || 'Chat Attachment',
@@ -841,7 +849,11 @@ export const importChatFilesToCRM = async (caseId: string, chatId: string, lawye
             source: 'chat'
         });
 
-        if (!error) count++;
+        if (error) {
+            console.error("Error inserting document:", error);
+        } else {
+            count++;
+        }
     }
     return count;
 };
