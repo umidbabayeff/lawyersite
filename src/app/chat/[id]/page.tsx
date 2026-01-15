@@ -201,7 +201,7 @@ export default function ChatPage() {
     // ... existing handleAddToCRM ...
 
     return (
-        <div className="fixed inset-0 z-[100] w-full h-[100dvh] bg-white dark:bg-slate-900 flex flex-col shadow-none">
+        <div className="fixed inset-0 z-[10000] w-full h-[100dvh] bg-white dark:bg-slate-900 flex flex-col shadow-none">
             {/* Header */}
             <div className="bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 p-4 flex items-center justify-between shadow-sm z-10">
                 <div className="flex items-center gap-4">
@@ -328,7 +328,7 @@ export default function ChatPage() {
             </div>
 
             {/* Input */}
-            <div className="p-4 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800">
+            <div className="p-4 pb-safe bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800">
                 <form onSubmit={handleSend} className="flex gap-2">
                     <input
                         type="text"
