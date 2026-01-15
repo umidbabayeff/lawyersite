@@ -64,6 +64,58 @@ export default function GlobalCallManager() {
         return () => clearTimeout(timeout);
     }, [isIncomingCall, incomingSignal, user, handleRejectCall]);
 
+    useEffect(() => {
+        if (!user) return;
+
+        console.log("GlobalCallManager: Subscribing to events for", user.id);
+        const unsubscribe = subscribeToCallEvents(user.id, async (signal) => {
+            console.log("GlobalCallManager received:", signal.type, "from", signal.senderId);
+
+            if (signal.type === 'offer') {
+                if (isCallActiveRef.current) {
+                    console.log("GlobalCallManager: Auto-rejecting offer (Busy)");
+                    // Send busy signal
+                    signalCall(signal.senderId, { type: 'busy', senderId: user.id });
+                    return;
+                }
+
+                setIncomingSignal(signal);
+                setIceCandidates([]); // Clear previous candidates
+
+                // Fetch caller profile
+                const profile = await getUserProfile(signal.senderId);
+                setCallerProfile(profile);
+                setIsIncomingCall(true);
+
+            } else if (signal.type === 'ice-candidate') {
+                console.log("GlobalCallManager: ICE Candidate detected.");
+                // Buffer candidates while ringing
+                if (!isCallActiveRef.current) {
+                    console.log("GlobalCallManager: Buffering candidate.");
+                    setIceCandidates(prev => [...prev, signal.payload]);
+                } else {
+                    console.log("GlobalCallManager: Ignoring candidate (Handled by VideoCall).");
+                }
+            } else if (signal.type === 'end-call') {
+                console.log("GlobalCallManager: End call signal.");
+                setIsIncomingCall(false);
+                setIncomingSignal(undefined);
+                setIceCandidates([]);
+                if (!isCallActiveRef.current) {
+                    // Only close if we are not in the middle of a call (or maybe we should close?)
+                    // If it's the ringing modal, close it.
+                    setCallerProfile(null);
+                }
+            }
+        });
+
+        return () => {
+            console.log("GlobalCallManager: Unsubscribing");
+            unsubscribe();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id]); // Stable dependency: Only re-subscribe if ID changes, not object ref // Only subscribe once on mount (per user)
+
     // If Call is Active (because we accepted), we render VideoCall.
     // BUT: VideoCall needs to receive ICE candidates that come in AFTER the offer.
     // Since `subscribeToCallEvents` is here, WE receive them.
