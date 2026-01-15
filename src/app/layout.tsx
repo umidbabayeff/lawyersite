@@ -24,7 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.className} antialiased bg-gray-50 min-h-screen flex flex-col`}
+        className={`${inter.className} antialiased bg-gray-50 min-h-screen flex flex-col overflow-x-hidden`}
       >
         <AuthProvider>
           <GlobalCallManager />

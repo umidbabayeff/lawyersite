@@ -58,7 +58,7 @@ export default function Home() {
   return (
     <div className="space-y-12 pb-12">
       {/* Hero Section */}
-      <section className="relative -mt-8 py-20 lg:py-32 overflow-hidden bg-primary dark:bg-slate-950 text-primary-foreground dark:text-white rounded-b-[3rem] shadow-2xl mx-[-2rem] px-[2rem] sm:mx-[-3rem] sm:px-[3rem] lg:mx-[-4rem] lg:px-[4rem]">
+      <section className="relative -mt-8 py-20 lg:py-32 overflow-hidden bg-primary dark:bg-slate-950 text-primary-foreground dark:text-white rounded-b-[3rem] shadow-2xl mx-[-1rem] px-[1rem] sm:mx-[-1.5rem] sm:px-[1.5rem] lg:mx-[-2rem] lg:px-[2rem]">
         <div className="relative z-10 max-w-4xl mx-auto text-center space-y-6">
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-7xl">
             {t("hero.title")} <br />
