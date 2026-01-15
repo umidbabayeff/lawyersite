@@ -11,7 +11,7 @@ import { useLanguage } from "@/lib/i18n_context";
 import Image from "next/image";
 
 export default function Home() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const [lawyers, setLawyers] = useState<LawyerProfile[]>([]);
   const [filteredLawyers, setFilteredLawyers] = useState<LawyerProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,9 +40,10 @@ export default function Home() {
     fetchLawyers();
 
     // Fetch Metadata
-    getConstants('locations', language).then(setLocations);
-    getConstants('specializations', language).then(setSpecializations);
-  }, [language]);
+    // Fetch Metadata
+    getConstants('locations').then(setLocations);
+    getConstants('specializations').then(setSpecializations);
+  }, []);
 
   useEffect(() => {
     let result = lawyers;

@@ -13,7 +13,7 @@ export default function Dashboard() {
     const { user, userProfile, loading, refreshProfile } = useAuth();
     const router = useRouter();
     const [saving, setSaving] = useState(false);
-    const { t, language } = useLanguage();
+    const { t } = useLanguage();
 
     const { register, handleSubmit, setValue, watch } = useForm<LawyerProfile>();
     const cityValue = watch("city");
@@ -31,9 +31,9 @@ export default function Dashboard() {
     const [uploadingBanner, setUploadingBanner] = useState(false);
 
     useEffect(() => {
-        getConstants('locations', language).then(setLocations);
-        getConstants('specializations', language).then(setSpecializationsList);
-    }, [language]);
+        getConstants('locations').then(setLocations);
+        getConstants('specializations').then(setSpecializationsList);
+    }, []);
 
     useEffect(() => {
         if (user && userProfile?.role === 'lawyer') {
