@@ -952,6 +952,38 @@ export const uploadCRMDocument = async (file: File, caseId: string, parentId: st
     return publicUrl;
 };
 
+export const moveCRMDocument = async (docId: string, newParentId: string | null) => {
+    const { error } = await supabase
+        .from('crm_documents')
+        .update({ parent_id: newParentId })
+        .eq('id', docId);
+    if (error) throw error;
+};
+
+export const getAllCRMFolders = async (caseId: string): Promise<CRMDocument[]> => {
+    const { data, error } = await supabase
+        .from('crm_documents')
+        .select('*')
+        .eq('case_id', caseId)
+        .eq('is_folder', true)
+        .order('file_name', { ascending: true });
+
+    if (error) {
+        console.error("Error fetching folders:", error);
+        return [];
+    }
+
+    return (data as Array<Record<string, unknown>>).map(d => ({
+        id: d.id as string,
+        fileName: d.file_name as string,
+        fileUrl: d.file_url as string,
+        uploadedAt: d.uploaded_at as string,
+        source: (d.source as 'chat' | 'upload') || 'upload',
+        isFolder: true,
+        parentId: d.parent_id as string
+    }));
+};
+
 
 // --- Admin / Setup ---
 // --- Admin / Setup ---

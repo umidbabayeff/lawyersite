@@ -8,10 +8,10 @@ import {
     getCase, updateCase,
     getTimeEntries, startTimeEntry, stopTimeEntry,
     getCRMDocuments, uploadCRMDocument,
-    getChatRoom, getChatMessages, importChatDocument, createCRMFolder, renameCRMDocument, deleteCRMDocument,
+    getChatRoom, getChatMessages, importChatDocument, createCRMFolder, renameCRMDocument, deleteCRMDocument, moveCRMDocument, getAllCRMFolders,
     Case, TimeEntry, CRMDocument, ChatMessage
 } from "@/lib/services";
-import { FaBriefcase, FaClock, FaFolder, FaPlay, FaStop, FaUpload, FaFileAlt, FaArrowLeft, FaComments, FaTrash } from "react-icons/fa";
+import { FaBriefcase, FaClock, FaFolder, FaPlay, FaStop, FaUpload, FaFileAlt, FaArrowLeft, FaComments, FaTrash, FaArrowRight } from "react-icons/fa";
 import Link from "next/link";
 
 export default function CaseDetailPage() {
@@ -161,6 +161,37 @@ export default function CaseDetailPage() {
         } catch (e) {
             console.error(e);
             alert("Failed to rename");
+        }
+    };
+
+    // Move Feature
+    const [moveToItem, setMoveToItem] = useState<CRMDocument | null>(null);
+    const [availableFolders, setAvailableFolders] = useState<CRMDocument[]>([]);
+
+    const handleMoveInit = async (item: CRMDocument) => {
+        setMoveToItem(item);
+        // Load all folders
+        try {
+            const folders = await getAllCRMFolders(id as string);
+            // Filter out the item itself if it's a folder, and maybe its children? Match logic simplistically first:
+            // Don't move a folder into itself.
+            setAvailableFolders(folders.filter(f => f.id !== item.id));
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const handleMoveExecute = async (targetFolderId: string | null) => {
+        if (!moveToItem) return;
+        if (targetFolderId === moveToItem.id) return; // Can't move into self
+
+        try {
+            await moveCRMDocument(moveToItem.id, targetFolderId);
+            setMoveToItem(null);
+            loadDocuments();
+        } catch (e) {
+            console.error(e);
+            alert("Failed to move item");
         }
     };
 
@@ -470,6 +501,13 @@ export default function CaseDetailPage() {
                                         {/* Actions */}
                                         <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
+                                                onClick={(e) => { e.stopPropagation(); handleMoveInit(doc); }}
+                                                className="p-1.5 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded"
+                                                title="Move"
+                                            >
+                                                <FaArrowRight size={14} />
+                                            </button>
+                                            <button
                                                 onClick={(e) => { e.stopPropagation(); handleRenameItem(doc.id, doc.fileName); }}
                                                 className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
                                                 title="Rename"
@@ -497,6 +535,44 @@ export default function CaseDetailPage() {
                                 </div>
                             )}
                         </div>
+
+                        {/* Move Modal */}
+                        {moveToItem && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                                <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm overflow-hidden shadow-xl animate-in fade-in zoom-in duration-200">
+                                    <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
+                                        <h3 className="font-bold text-gray-900 dark:text-white">Move "{moveToItem.fileName}" to...</h3>
+                                        <button onClick={() => setMoveToItem(null)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400">✕</button>
+                                    </div>
+                                    <div className="p-2 max-h-[60vh] overflow-y-auto">
+                                        <button
+                                            onClick={() => handleMoveExecute(null)}
+                                            className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors ${!moveToItem.parentId ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20' : 'text-gray-700 dark:text-gray-300'}`}
+                                        >
+                                            <FaFolder className="text-yellow-500" />
+                                            <span className="font-medium">root (Main Folder)</span>
+                                            {!moveToItem.parentId && <span className="ml-auto text-xs font-bold opacity-50">CURRENT</span>}
+                                        </button>
+
+                                        {availableFolders.map(folder => (
+                                            <button
+                                                key={folder.id}
+                                                onClick={() => handleMoveExecute(folder.id)}
+                                                className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors ${moveToItem.parentId === folder.id ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20' : 'text-gray-700 dark:text-gray-300'}`}
+                                            >
+                                                <FaFolder className="text-yellow-500" />
+                                                <span className="font-medium truncate">{folder.fileName}</span>
+                                                {moveToItem.parentId === folder.id && <span className="ml-auto text-xs font-bold opacity-50">CURRENT</span>}
+                                            </button>
+                                        ))}
+
+                                        {availableFolders.length === 0 && (
+                                            <p className="p-4 text-center text-sm text-gray-400">No other folders created yet.</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
