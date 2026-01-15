@@ -110,6 +110,11 @@ export default function GlobalCallManager() {
     };
 
     const handleRejectCall = () => {
+        if (incomingSignal?.senderId && user) {
+            signalCall(incomingSignal.senderId, { type: 'busy', senderId: user.id });
+            // Also log "Call Rejected" ? Or let Caller handle "User Busy" log?
+            // Caller logs "User was busy" in VideoCall.tsx
+        }
         setIsIncomingCall(false);
         setIncomingSignal(undefined);
     };
