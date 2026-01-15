@@ -28,82 +28,6 @@ export default function GlobalCallManager() {
         isIncomingCallRef.current = isIncomingCall;
     }, [isCallActive, isIncomingCall]);
 
-    // Timeout Logic: Auto-reject after 30s
-    useEffect(() => {
-        let timeout: NodeJS.Timeout;
-        if (isIncomingCall && incomingSignal) {
-            timeout = setTimeout(() => {
-                console.log("GlobalCallManager: Call timed out (30s). Auto-rejecting.");
-                // Notify caller it was missed
-                if (user && incomingSignal.senderId) {
-                    signalCall(incomingSignal.senderId, { type: 'missed-call', senderId: user.id });
-                    // Log "Missed Call" for MYSELF (Receiver)
-                    // Message: FROM Caller TO Me (so it appears in the chat with Caller)
-                    // Actually, `sendMessage` arg 1 is `chatId` (the OTHER person).
-                    // So we send to `incomingSignal.senderId`.
-                    // The `senderId` arg of `sendMessage` is ME (`user.id`).
-                    // Meaning: "I (User) sent a message to Caller(ChatId) saying 'Missed video call'".
-                    // This will show up in MY chat with HIM.
-                    sendMessage(incomingSignal.senderId, user.id, "Missed video call", { type: 'call_log' });
-                }
-                handleRejectCall();
-            }, 30000);
-        }
-        return () => clearTimeout(timeout);
-    }, [isIncomingCall, incomingSignal, user, handleRejectCall]);
-
-    useEffect(() => {
-        if (!user) return;
-
-        console.log("GlobalCallManager: Subscribing to events for", user.id);
-        const unsubscribe = subscribeToCallEvents(user.id, async (signal) => {
-            console.log("GlobalCallManager received:", signal.type, "from", signal.senderId);
-
-            if (signal.type === 'offer') {
-                if (isCallActiveRef.current) {
-                    console.log("GlobalCallManager: Auto-rejecting offer (Busy)");
-                    // Send busy signal
-                    signalCall(signal.senderId, { type: 'busy', senderId: user.id });
-                    return;
-                }
-
-                setIncomingSignal(signal);
-                setIceCandidates([]); // Clear previous candidates
-
-                // Fetch caller profile
-                const profile = await getUserProfile(signal.senderId);
-                setCallerProfile(profile);
-                setIsIncomingCall(true);
-
-            } else if (signal.type === 'ice-candidate') {
-                console.log("GlobalCallManager: ICE Candidate detected.");
-                // Buffer candidates while ringing
-                if (!isCallActiveRef.current) {
-                    console.log("GlobalCallManager: Buffering candidate.");
-                    setIceCandidates(prev => [...prev, signal.payload]);
-                } else {
-                    console.log("GlobalCallManager: Ignoring candidate (Handled by VideoCall).");
-                }
-            } else if (signal.type === 'end-call') {
-                console.log("GlobalCallManager: End call signal.");
-                setIsIncomingCall(false);
-                setIncomingSignal(undefined);
-                setIceCandidates([]);
-                if (!isCallActiveRef.current) {
-                    // Only close if we are not in the middle of a call (or maybe we should close?)
-                    // If it's the ringing modal, close it.
-                    setCallerProfile(null);
-                }
-            }
-        });
-
-        return () => {
-            console.log("GlobalCallManager: Unsubscribing");
-            unsubscribe();
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.id]); // Stable dependency: Only re-subscribe if ID changes, not object ref // Only subscribe once on mount (per user)
-
     const handleAcceptCall = () => {
         setIsIncomingCall(false);
         setIsCallActive(true);
@@ -122,6 +46,23 @@ export default function GlobalCallManager() {
         setIsIncomingCall(false);
         setIncomingSignal(undefined);
     };
+
+    // Timeout Logic: Auto-reject after 30s
+    useEffect(() => {
+        let timeout: NodeJS.Timeout;
+        if (isIncomingCall && incomingSignal) {
+            timeout = setTimeout(() => {
+                console.log("GlobalCallManager: Call timed out (30s). Auto-rejecting.");
+                // Notify caller it was missed
+                if (user && incomingSignal.senderId) {
+                    signalCall(incomingSignal.senderId, { type: 'missed-call', senderId: user.id });
+                    sendMessage(incomingSignal.senderId, user.id, "Missed video call", { type: 'call_log' });
+                }
+                handleRejectCall();
+            }, 30000);
+        }
+        return () => clearTimeout(timeout);
+    }, [isIncomingCall, incomingSignal, user, handleRejectCall]);
 
     // If Call is Active (because we accepted), we render VideoCall.
     // BUT: VideoCall needs to receive ICE candidates that come in AFTER the offer.
