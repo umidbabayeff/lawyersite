@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth";
 import { CallSignal, subscribeToCallEvents, getUserProfile, UserProfile, signalCall, sendMessage } from "@/lib/services";
 import VideoCall from "./VideoCall";
@@ -50,7 +50,7 @@ export default function GlobalCallManager() {
             }, 30000);
         }
         return () => clearTimeout(timeout);
-    }, [isIncomingCall, incomingSignal, user]);
+    }, [isIncomingCall, incomingSignal, user, handleRejectCall]);
 
     useEffect(() => {
         if (!user) return;
@@ -109,15 +109,13 @@ export default function GlobalCallManager() {
         setIsCallActive(true);
     };
 
-    const handleRejectCall = () => {
+    const handleRejectCall = useCallback(() => {
         if (incomingSignal?.senderId && user) {
             signalCall(incomingSignal.senderId, { type: 'busy', senderId: user.id });
-            // Also log "Call Rejected" ? Or let Caller handle "User Busy" log?
-            // Caller logs "User was busy" in VideoCall.tsx
         }
         setIsIncomingCall(false);
         setIncomingSignal(undefined);
-    };
+    }, [incomingSignal, user]);
 
     const handleEndCall = () => {
         setIsCallActive(false);

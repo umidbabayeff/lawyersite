@@ -56,8 +56,14 @@ export default function ChatPage() {
     };
 
     // Handlers for Outgoing call end
-    const handleEndCall = () => {
+    // Handlers for Outgoing call end
+    const handleEndCall = async () => {
         setIsCallActive(false);
+        // Refresh messages to ensure call logs appear immediately
+        if (user && chatId) {
+            const msgs = await getChatMessages(chatId);
+            setMessages(msgs);
+        }
     };
 
     const handleAddToCRM = async () => {
