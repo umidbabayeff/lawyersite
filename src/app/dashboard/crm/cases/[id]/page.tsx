@@ -379,7 +379,7 @@ export default function CaseDetailPage() {
                             <div>
                                 <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                     {folderPath.length > 0 && (
-                                        <button onClick={navigateUp} className="hover:text-primary transition-colors">
+                                        <button onClick={navigateUp} className="hover:text-primary transition-colors" aria-label="Go Up" title="Go Up">
                                             <FaArrowLeft />
                                         </button>
                                     )}
