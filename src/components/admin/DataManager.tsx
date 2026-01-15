@@ -14,11 +14,11 @@ export default function DataManager() {
     const [newSpec, setNewSpec] = useState("");
 
     const refreshData = useCallback(async () => {
-        const locs = await getConstants('locations', language);
-        const specs = await getConstants('specializations', language);
+        const locs = await getConstants('locations');
+        const specs = await getConstants('specializations');
         setLocations(locs);
         setSpecializations(specs);
-    }, [language]);
+    }, []);
 
     useEffect(() => {
         const load = async () => {
