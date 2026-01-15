@@ -804,8 +804,24 @@ export const getCRMDocuments = async (caseId: string): Promise<CRMDocument[]> =>
     console.log("getCRMDocuments for", caseId);
     return [];
 };
-export const uploadCRMDocument = async (file: File, caseId: string, lawyerId: string) => {
-    console.log("uploadCRMDocument", file.name, "to", caseId, "by", lawyerId);
+export const uploadCRMDocument = async (file: File, caseId: string) => {
+    const path = `crm/${caseId}/${Date.now()}_${file.name}`;
+    const { error } = await supabase.storage.from('documents').upload(path, file);
+    if (error) throw error;
+
+    // Get URL
+    const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(path);
+
+    // Save to DB
+    const { error: dbError } = await supabase.from('crm_documents').insert({
+        case_id: caseId,
+        file_name: file.name,
+        file_url: publicUrl,
+        source: 'upload'
+    });
+
+    if (dbError) throw dbError;
+    return publicUrl;
 };
 
 

@@ -107,7 +107,7 @@ export default function CaseDetailPage() {
 
         setUploading(true);
         try {
-            await uploadCRMDocument(e.target.files[0], id as string, user.id);
+            await uploadCRMDocument(e.target.files[0], id as string);
             loadDocuments();
         } catch (err) {
             console.error(err);
