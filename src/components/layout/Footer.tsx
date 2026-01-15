@@ -14,7 +14,7 @@ export default function Footer() {
     const social = settings?.socialLinks || {};
 
     return (
-        <footer className="bg-white dark:bg-slate-950 border-t border-gray-200 dark:border-slate-800 py-8 pb-24 sm:pb-8">
+        <footer className="bg-white dark:bg-slate-950 border-t border-gray-200 dark:border-slate-800 py-8 pb-32 sm:pb-8">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                     {/* Brand */}
