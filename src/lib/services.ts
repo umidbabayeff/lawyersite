@@ -90,8 +90,8 @@ export interface CommunityRequest {
     status: 'open' | 'accepted' | 'closed';
     createdAt: string | Date;
     clientName: string;
-    location?: string;
-    specialty?: string;
+    location: string;
+    specialty: string;
     budget?: number;
     proposalCount?: number;
 }
@@ -689,12 +689,81 @@ export const addReview = async (review: Record<string, unknown>) => {
 
 
 // --- Community Requests ---
-export const createCommunityRequest = async (data: Record<string, unknown>) => {
-    console.log("createCommunityRequest", data.title);
+
+
+export const createCommunityRequest = async (data: {
+    clientId: string;
+    clientName: string;
+    title: string;
+    description: string;
+    location: string;
+    specialty: string;
+    budget?: number;
+}) => {
+    const { error } = await supabase.from('community_requests').insert({
+        client_id: data.clientId,
+        client_name: data.clientName,
+        title: data.title,
+        description: data.description,
+        location: data.location,
+        specialty: data.specialty,
+        budget: data.budget,
+        status: 'open'
+    });
+
+    if (error) throw error;
 };
+interface DBCommunityRequest {
+    id: string;
+    client_id: string;
+    client_name: string;
+    title: string;
+    description: string;
+    location: string;
+    specialty: string;
+    budget?: number;
+    status: string;
+    created_at: string;
+    proposals: { count: number }[];
+}
+
 export const getOpenCommunityRequests = async (filters?: { city?: string, specialty?: string }) => {
-    console.log("getOpenCommunityRequests", filters);
-    return [] as CommunityRequest[];
+    let query = supabase
+        .from('community_requests')
+        .select(`
+            *,
+            proposals:request_proposals(count)
+        `)
+        .eq('status', 'open')
+        .order('created_at', { ascending: false });
+
+    if (filters?.city) {
+        query = query.eq('location', filters.city);
+    }
+    if (filters?.specialty) {
+        query = query.eq('specialty', filters.specialty);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+        console.error("Error fetching requests:", error);
+        return [];
+    }
+
+    return (data as unknown as DBCommunityRequest[]).map((req) => ({
+        id: req.id,
+        clientId: req.client_id,
+        clientName: req.client_name,
+        title: req.title,
+        description: req.description,
+        location: req.location || '',
+        specialty: req.specialty || '',
+        budget: req.budget,
+        status: req.status as 'open' | 'accepted' | 'closed',
+        createdAt: req.created_at,
+        proposalCount: req.proposals?.[0]?.count || 0
+    }));
 };
 export const getCommunityRequestById = async (id: string) => {
     console.log("getCommunityRequestById", id);
@@ -1120,10 +1189,23 @@ export const clearDatabase = async () => {
 
 
 // --- Constants ---
-export const getConstants = async (type: string, lang?: string) => {
-    console.log("getConstants", type, lang);
-    if (type === 'locations') return ["Baku", "Ganja", "Sumqayit", "Lankaran", "Shaki"];
-    if (type === 'specializations') return ["Criminal Law", "Civil Law", "Family Law", "Corporate Law", "Property Law"];
+export const getConstants = async (type: 'locations' | 'specializations') => {
+    // Return hardcoded lists for now to ensure dropdowns work immediately
+    if (type === 'locations') {
+        return [
+            "New York", "Los Angeles", "Chicago", "Houston", "Phoenix",
+            "Philadelphia", "San Antonio", "San Diego", "Dallas", "San Jose",
+            "Austin", "Jacksonville", "Fort Worth", "Columbus", "San Francisco",
+            "Charlotte", "Indianapolis", "Seattle", "Denver", "Washington"
+        ].sort();
+    }
+    if (type === 'specializations') {
+        return [
+            "Criminal Defense", "Family Law", "Corporate Law", "Immigration",
+            "Personal Injury", "Real Estate", "Intellectual Property", "Employment Law",
+            "Tax Law", "Bankruptcy", "Civil Litigation", "Medical Malpractice"
+        ].sort();
+    }
     return [];
 };
 export const addConstant = async (type: string, value: string) => {
