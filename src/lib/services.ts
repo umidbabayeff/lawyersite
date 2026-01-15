@@ -794,6 +794,58 @@ export const getTimeEntries = async (caseId: string): Promise<TimeEntry[]> => {
     console.log("getTimeEntries for", caseId);
     return [];
 };
+export const getCaseByClient = async (lawyerId: string, clientId: string): Promise<Case | null> => {
+    const { data, error } = await supabase
+        .from('cases')
+        .select('*')
+        .eq('lawyer_id', lawyerId)
+        .eq('client_id', clientId)
+        .single();
+
+    if (error || !data) return null;
+
+    const row = data as Record<string, unknown>;
+    return {
+        id: row.id as string,
+        clientId: row.client_id as string,
+        clientName: row.client_name as string,
+        title: row.title as string,
+        status: row.status as Case['status'],
+        createdAt: row.created_at as string,
+        description: row.description as string,
+        lawyerId: row.lawyer_id as string
+    };
+};
+
+export const importChatFilesToCRM = async (caseId: string, chatId: string, lawyerId: string) => {
+    // 1. Get all file messages in this chat
+    const { data: messages } = await supabase
+        .from('messages')
+        .select('*')
+        .or(`and(sender_id.eq.${lawyerId},receiver_id.eq.${chatId}),and(sender_id.eq.${chatId},receiver_id.eq.${lawyerId})`)
+        .in('type', ['file', 'image'])
+        .not('file_url', 'is', null);
+
+    if (!messages || messages.length === 0) return 0;
+
+    let count = 0;
+    for (const msg of messages) {
+        // Check if already exists in crm_documents to avoid duplicates?
+        // For simplicity, we'll just try to insert. 
+        // Ideally we check `file_url` uniqueness per case.
+
+        const { error } = await supabase.from('crm_documents').insert({
+            case_id: caseId,
+            file_name: msg.file_name || 'Chat Attachment',
+            file_url: msg.file_url,
+            source: 'chat'
+        });
+
+        if (!error) count++;
+    }
+    return count;
+};
+
 export const startTimeEntry = async (caseId: string, lawyerId: string) => {
     console.log("startTimeEntry", caseId, lawyerId);
 };

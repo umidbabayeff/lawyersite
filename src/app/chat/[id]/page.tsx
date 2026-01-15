@@ -3,8 +3,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { subscribeToMessages, sendMessage, ChatMessage, markChatRead, uploadChatAttachment, createCase, deleteChat, getUserProfile, UserProfile, getChatMessages } from "@/lib/services";
-import { FaPaperPlane, FaArrowLeft, FaPaperclip, FaFile, FaBriefcase, FaTrash, FaVideo, FaPhoneSlash } from "react-icons/fa";
+import { subscribeToMessages, sendMessage, ChatMessage, markChatRead, uploadChatAttachment, createCase, deleteChat, getUserProfile, UserProfile, getChatMessages, getCaseByClient, importChatFilesToCRM } from "@/lib/services";
+import { FaPaperPlane, FaArrowLeft, FaPaperclip, FaFile, FaBriefcase, FaTrash, FaVideo, FaPhoneSlash, FaFileImport, FaDownload } from "react-icons/fa";
 import VideoCall from "@/components/VideoCall";
 import Image from "next/image";
 
@@ -175,6 +175,29 @@ export default function ChatPage() {
         }
     };
 
+    const [existingCase, setExistingCase] = useState<any>(null);
+
+    useEffect(() => {
+        if (user && chatId && userProfile?.role === 'lawyer') {
+            getCaseByClient(user.id, chatId).then(setExistingCase);
+        }
+    }, [user, chatId, userProfile]);
+
+    const handleImportToCRM = async () => {
+        if (!existingCase || !user) return;
+        if (!confirm("Import all files from this chat to the CRM Case?")) return;
+
+        try {
+            const count = await importChatFilesToCRM(existingCase.id, chatId, user.id);
+            alert(`Successfully imported ${count} files to CRM Case: ${existingCase.title}`);
+        } catch (error) {
+            console.error(error);
+            alert("Failed to import files");
+        }
+    };
+
+    // ... existing handleAddToCRM ...
+
     return (
         <div className="flex flex-col h-[calc(100vh-theme(spacing.20))] max-w-3xl mx-auto bg-white dark:bg-slate-900 shadow-sm sm:rounded-2xl sm:my-8 overflow-hidden border border-gray-100 dark:border-slate-800">
             {/* Header */}
@@ -184,6 +207,7 @@ export default function ChatPage() {
                         <FaArrowLeft />
                     </button>
                     <div className="flex items-center gap-3">
+                        {/* ... User Info ... */}
                         <div className="h-10 w-10 bg-primary/10 dark:bg-slate-800 rounded-full flex items-center justify-center text-primary dark:text-primary-foreground font-bold overflow-hidden">
                             {otherUser?.photoUrl ? (
                                 <Image src={otherUser.photoUrl} alt={otherUser.name} width={40} height={40} className="object-cover h-full w-full" />
@@ -201,13 +225,23 @@ export default function ChatPage() {
                 </div>
                 <div className="flex gap-2">
                     {userProfile?.role === 'lawyer' && (
-                        <button
-                            onClick={handleAddToCRM}
-                            className="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1"
-                            title="Add Client to CRM"
-                        >
-                            <FaBriefcase /> CRM
-                        </button>
+                        existingCase ? (
+                            <button
+                                onClick={handleImportToCRM}
+                                className="text-xs bg-purple-50 text-purple-600 px-3 py-1.5 rounded-lg hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-400 dark:hover:bg-purple-900/50 transition-colors flex items-center gap-1"
+                                title="Import Files to CRM"
+                            >
+                                <FaFileImport /> Import Files
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handleAddToCRM}
+                                className="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1"
+                                title="Add Client to CRM"
+                            >
+                                <FaBriefcase /> Add to CRM
+                            </button>
+                        )
                     )}
                     <button
                         onClick={handleDeleteChat}
@@ -254,12 +288,23 @@ export default function ChatPage() {
                                     </div>
                                 ) : msg.type === 'file' && msg.fileUrl ? (
                                     <div className="mb-2">
-                                        <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-black/5 dark:bg-white/10 p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/20 transition-colors">
+                                        <div className="flex items-center gap-2 bg-black/5 dark:bg-white/10 p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/20 transition-colors group">
                                             <div className="bg-white dark:bg-slate-800 p-2 rounded-full text-primary dark:text-primary-foreground">
                                                 <FaFile />
                                             </div>
-                                            <span className="text-xs underline truncate max-w-[150px]">{msg.fileName || 'Document'}</span>
-                                        </a>
+                                            <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs underline truncate max-w-[150px] flex-1">
+                                                {msg.fileName || 'Document'}
+                                            </a>
+                                            <a
+                                                href={msg.fileUrl}
+                                                download={msg.fileName || 'download'}
+                                                target="_blank"
+                                                className="text-gray-400 hover:text-primary transition-colors p-1"
+                                                title="Download"
+                                            >
+                                                <FaDownload />
+                                            </a>
+                                        </div>
                                     </div>
                                 ) : msg.type === 'call_log' ? (
                                     <div className="flex items-center gap-2 justify-center py-1">
