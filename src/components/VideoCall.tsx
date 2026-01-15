@@ -159,6 +159,8 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
                     addLog("User is busy");
                     setCallState(CallState.ENDED);
                     setEndReason("User is busy 🚫");
+                    // Log to chat
+                    await sendMessage(chatId, myId, "User was busy", { type: 'call_log' });
                     setTimeout(onEndCall, 2000);
                 } else if (signal.type === 'missed-call') {
                     addLog("Call missed/timeout");
