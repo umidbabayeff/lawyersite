@@ -201,7 +201,7 @@ export default function ChatPage() {
     // ... existing handleAddToCRM ...
 
     return (
-        <div className="flex flex-col h-[calc(100vh-64px)] w-full bg-white dark:bg-slate-900 shadow-none">
+        <div className="fixed inset-0 z-[100] w-full h-[100dvh] bg-white dark:bg-slate-900 flex flex-col shadow-none">
             {/* Header */}
             <div className="bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 p-4 flex items-center justify-between shadow-sm z-10">
                 <div className="flex items-center gap-4">
