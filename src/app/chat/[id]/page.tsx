@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { subscribeToMessages, sendMessage, ChatMessage, markChatRead, uploadChatAttachment, createCase, deleteChat, getUserProfile, UserProfile } from "@/lib/services";
+import { subscribeToMessages, sendMessage, ChatMessage, markChatRead, uploadChatAttachment, createCase, deleteChat, getUserProfile, UserProfile, getChatMessages } from "@/lib/services";
 import { FaPaperPlane, FaArrowLeft, FaPaperclip, FaFile, FaBriefcase, FaTrash, FaVideo, FaPhoneSlash } from "react-icons/fa";
 import VideoCall from "@/components/VideoCall";
 import Image from "next/image";
