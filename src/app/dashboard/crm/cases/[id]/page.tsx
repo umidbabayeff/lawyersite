@@ -541,7 +541,7 @@ export default function CaseDetailPage() {
                             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
                                 <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm overflow-hidden shadow-xl animate-in fade-in zoom-in duration-200">
                                     <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
-                                        <h3 className="font-bold text-gray-900 dark:text-white">Move "{moveToItem.fileName}" to...</h3>
+                                        <h3 className="font-bold text-gray-900 dark:text-white">Move &quot;{moveToItem.fileName}&quot; to...</h3>
                                         <button onClick={() => setMoveToItem(null)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400">✕</button>
                                     </div>
                                     <div className="p-2 max-h-[60vh] overflow-y-auto">
