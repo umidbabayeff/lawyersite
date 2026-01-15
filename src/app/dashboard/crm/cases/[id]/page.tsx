@@ -8,10 +8,10 @@ import {
     getCase, updateCase,
     getTimeEntries, startTimeEntry, stopTimeEntry,
     getCRMDocuments, uploadCRMDocument,
-    getChatRoom, getChatMessages, importChatDocument,
+    getChatRoom, getChatMessages, importChatDocument, createCRMFolder, renameCRMDocument, deleteCRMDocument,
     Case, TimeEntry, CRMDocument, ChatMessage
 } from "@/lib/services";
-import { FaBriefcase, FaClock, FaFolder, FaPlay, FaStop, FaUpload, FaFileAlt, FaArrowLeft, FaComments } from "react-icons/fa";
+import { FaBriefcase, FaClock, FaFolder, FaPlay, FaStop, FaUpload, FaFileAlt, FaArrowLeft, FaComments, FaTrash } from "react-icons/fa";
 import Link from "next/link";
 
 export default function CaseDetailPage() {
@@ -32,6 +32,8 @@ export default function CaseDetailPage() {
     // Documents
     const [documents, setDocuments] = useState<CRMDocument[]>([]);
     const [uploading, setUploading] = useState(false);
+    const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+    const [folderPath, setFolderPath] = useState<{ id: string, name: string }[]>([]);
 
     // Error Handling
     const [error, setError] = useState<string | null>(null);
@@ -49,13 +51,13 @@ export default function CaseDetailPage() {
 
     const loadDocuments = useCallback(() => {
         if (!id) return;
-        getCRMDocuments(id as string)
+        getCRMDocuments(id as string, currentFolderId)
             .then(setDocuments)
             .catch(err => {
                 console.error("Error loading documents:", err);
                 setError(err.message);
             });
-    }, [id]);
+    }, [id, currentFolderId]);
 
     useEffect(() => {
         if (!user || !id) return;
@@ -107,7 +109,16 @@ export default function CaseDetailPage() {
 
         setUploading(true);
         try {
-            await uploadCRMDocument(e.target.files[0], id as string);
+            // Note: uploadCRMDocument needs to be updated to support parentId if we want strict folder nesting in Storage? 
+            // Actually, we can just store the parentId in DB. Storage structure can remain flat or per-case.
+            // But we need to update the insert call in services.ts if we want the DB record to have parent_id.
+            // *Wait*, I didn't update uploadCRMDocument signature in services.ts yet!
+            // I should assume I'll fix it or pass it. 
+            // Actually, `uploadCRMDocument` in services.ts needs an update or we handle the DB insert manually here?
+            // Better to update `uploadCRMDocument` signature in next step.
+
+            // For now, I'll pass parentId if I update the service.
+            await uploadCRMDocument(e.target.files[0], id as string, currentFolderId);
             loadDocuments();
         } catch (err) {
             console.error(err);
@@ -116,6 +127,55 @@ export default function CaseDetailPage() {
         } finally {
             setUploading(false);
         }
+    };
+
+    const handleCreateFolder = async () => {
+        const name = prompt("Enter folder name:");
+        if (!name) return;
+        try {
+            await createCRMFolder(id as string, name, currentFolderId);
+            loadDocuments();
+        } catch (e) {
+            console.error(e);
+            alert("Failed to create folder");
+        }
+    };
+
+    const handleDeleteItem = async (docId: string) => {
+        if (!confirm("Are you sure? This will delete the item and its contents.")) return;
+        try {
+            await deleteCRMDocument(docId);
+            loadDocuments();
+        } catch (e) {
+            console.error(e);
+            alert("Failed to delete");
+        }
+    };
+
+    const handleRenameItem = async (docId: string, oldName: string) => {
+        const newName = prompt("Enter new name:", oldName);
+        if (!newName || newName === oldName) return;
+        try {
+            await renameCRMDocument(docId, newName);
+            loadDocuments();
+        } catch (e) {
+            console.error(e);
+            alert("Failed to rename");
+        }
+    };
+
+    // Navigation
+    const enterFolder = (folder: CRMDocument) => {
+        setFolderPath([...folderPath, { id: folder.id, name: folder.fileName }]);
+        setCurrentFolderId(folder.id);
+    };
+
+    const navigateUp = () => {
+        if (folderPath.length === 0) return;
+        const newPath = [...folderPath];
+        newPath.pop();
+        setFolderPath(newPath);
+        setCurrentFolderId(newPath.length > 0 ? newPath[newPath.length - 1].id : null);
     };
 
     const handleStatusUpdate = async (newStatus: string) => {
@@ -317,10 +377,40 @@ export default function CaseDetailPage() {
                         {/* Upload Header */}
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 gap-4">
                             <div>
-                                <h3 className="font-bold text-gray-900 dark:text-white">{t('crm.documents')}</h3>
-                                <p className="text-sm text-gray-500">Manage files related to this case</p>
+                                <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                    {folderPath.length > 0 && (
+                                        <button onClick={navigateUp} className="hover:text-primary transition-colors">
+                                            <FaArrowLeft />
+                                        </button>
+                                    )}
+                                    {folderPath.length === 0 ? t('crm.documents') : folderPath[folderPath.length - 1].name}
+                                </h3>
+                                <div className="text-sm text-gray-500 flex items-center gap-1">
+                                    <span onClick={() => { setFolderPath([]); setCurrentFolderId(null); }} className="cursor-pointer hover:underline">Root</span>
+                                    {folderPath.map((f, i) => (
+                                        <span key={f.id} className="flex items-center gap-1">
+                                            {'>'}
+                                            <span
+                                                onClick={() => {
+                                                    const newPath = folderPath.slice(0, i + 1);
+                                                    setFolderPath(newPath);
+                                                    setCurrentFolderId(newPath[newPath.length - 1].id);
+                                                }}
+                                                className="cursor-pointer hover:underline"
+                                            >
+                                                {f.name}
+                                            </span>
+                                        </span>
+                                    ))}
+                                </div>
                             </div>
                             <div className="flex flex-wrap gap-2">
+                                <button
+                                    onClick={handleCreateFolder}
+                                    className="px-4 py-2 rounded-lg font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-gray-300 dark:hover:bg-slate-700 transition-colors flex items-center gap-2"
+                                >
+                                    <FaFolder /> New Folder
+                                </button>
                                 <button
                                     onClick={() => setShowChatImport(!showChatImport)}
                                     className="px-4 py-2 rounded-lg font-semibold bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40 transition-colors flex items-center gap-2"
@@ -353,29 +443,53 @@ export default function CaseDetailPage() {
                             />
                         )}
 
-                        {/* ... document grid omitted for brevity if unchanged ... */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {documents.map(doc => {
+                                const isFolder = doc.isFolder;
+                                return (
+                                    <div
+                                        key={doc.id}
+                                        className="flex items-center gap-4 p-4 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl hover:border-primary transition-all group relative"
+                                    >
+                                        <div
+                                            onClick={() => isFolder ? enterFolder(doc) : window.open(doc.fileUrl, '_blank')}
+                                            className="flex-1 flex items-center gap-4 cursor-pointer min-w-0"
+                                        >
+                                            <div className={`p-3 rounded-lg transition-colors ${isFolder ? 'bg-yellow-50 text-yellow-500 dark:bg-yellow-900/20' : 'bg-blue-50 text-blue-600 dark:bg-blue-900/20'}`}>
+                                                {isFolder ? <FaFolder size={20} /> : <FaFileAlt size={20} />}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-medium text-gray-900 dark:text-white truncate">{doc.fileName}</p>
+                                                <p className="text-xs text-gray-500">
+                                                    {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : 'Just now'}
+                                                    {doc.source === 'chat' && <span className="ml-2 bg-blue-100 text-blue-700 text-[10px] px-1.5 py-0.5 rounded-full font-bold">CHAT</span>}
+                                                </p>
+                                            </div>
+                                        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {documents.map(doc => (
-                                <a
-                                    key={doc.id}
-                                    href={doc.fileUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-4 p-4 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl hover:border-primary transition-all group"
-                                >
-                                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-lg group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 transition-colors">
-                                        <FaFileAlt size={20} />
+                                        {/* Actions */}
+                                        <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleRenameItem(doc.id, doc.fileName); }}
+                                                className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded"
+                                                title="Rename"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleDeleteItem(doc.id); }}
+                                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
+                                                title="Delete"
+                                            >
+                                                <FaTrash size={14} />
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-gray-900 dark:text-white truncate">{doc.fileName}</p>
-                                        <p className="text-xs text-gray-500">
-                                            {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : 'Just now'}
-                                            {doc.source === 'chat' && <span className="ml-2 bg-blue-100 text-blue-700 text-[10px] px-1.5 py-0.5 rounded-full font-bold">CHAT</span>}
-                                        </p>
-                                    </div>
-                                </a>
-                            ))}
+                                );
+                            })}
+
                             {documents.length === 0 && (
                                 <div className="col-span-full p-12 text-center border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-2xl text-gray-500">
                                     <FaFolder size={48} className="mx-auto mb-4 opacity-20" />

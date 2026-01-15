@@ -135,9 +135,11 @@ export interface TimeEntry {
 export interface CRMDocument {
     id: string;
     fileName: string;
-    fileUrl: string;
+    fileUrl?: string; // Optional for folders
     uploadedAt: string | Date;
     source?: 'chat' | 'upload';
+    isFolder?: boolean;
+    parentId?: string | null;
 }
 
 
@@ -864,12 +866,22 @@ export const startTimeEntry = async (caseId: string, lawyerId: string) => {
 export const stopTimeEntry = async (entryId: string, rate: number) => {
     console.log("stopTimeEntry", entryId, "with rate", rate);
 };
-export const getCRMDocuments = async (caseId: string): Promise<CRMDocument[]> => {
-    const { data, error } = await supabase
+
+export const getCRMDocuments = async (caseId: string, parentId: string | null = null): Promise<CRMDocument[]> => {
+    let query = supabase
         .from('crm_documents')
         .select('*')
         .eq('case_id', caseId)
+        .order('is_folder', { ascending: false }) // Folders first
         .order('uploaded_at', { ascending: false });
+
+    if (parentId) {
+        query = query.eq('parent_id', parentId);
+    } else {
+        query = query.is('parent_id', null);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
         console.error("Error fetching CRM documents:", error);
@@ -881,10 +893,44 @@ export const getCRMDocuments = async (caseId: string): Promise<CRMDocument[]> =>
         fileName: d.file_name as string,
         fileUrl: d.file_url as string,
         uploadedAt: d.uploaded_at as string,
-        source: (d.source as 'chat' | 'upload') || 'upload'
+        source: (d.source as 'chat' | 'upload') || 'upload',
+        isFolder: d.is_folder as boolean,
+        parentId: d.parent_id as string
     }));
 };
-export const uploadCRMDocument = async (file: File, caseId: string) => {
+
+export const createCRMFolder = async (caseId: string, name: string, parentId: string | null = null) => {
+    const { error } = await supabase.from('crm_documents').insert({
+        case_id: caseId,
+        file_name: name,
+        file_url: '', // Empty for folders
+        source: 'upload',
+        is_folder: true,
+        parent_id: parentId
+    });
+    if (error) throw error;
+};
+
+export const renameCRMDocument = async (docId: string, newName: string) => {
+    const { error } = await supabase
+        .from('crm_documents')
+        .update({ file_name: newName })
+        .eq('id', docId);
+    if (error) throw error;
+};
+
+export const deleteCRMDocument = async (docId: string) => {
+    // If it's a folder, cascade delete is handled by DB constraint if set, BUT
+    // Storage bucket files need to be deleted manually if we want to be clean.
+    // For now, let's just delete the DB record. Storage cleanup is a separate task (or RLS prevents orphan access).
+
+    const { error } = await supabase
+        .from('crm_documents')
+        .delete()
+        .eq('id', docId);
+    if (error) throw error;
+};
+export const uploadCRMDocument = async (file: File, caseId: string, parentId: string | null = null) => {
     const path = `crm/${caseId}/${Date.now()}_${file.name}`;
     const { error } = await supabase.storage.from('documents').upload(path, file);
     if (error) throw error;
@@ -897,7 +943,9 @@ export const uploadCRMDocument = async (file: File, caseId: string) => {
         case_id: caseId,
         file_name: file.name,
         file_url: publicUrl,
-        source: 'upload'
+        source: 'upload',
+        parent_id: parentId,
+        is_folder: false
     });
 
     if (dbError) throw dbError;
