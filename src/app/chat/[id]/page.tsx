@@ -149,6 +149,23 @@ export default function ChatPage() {
                 url,
                 name: file.name
             });
+
+            // Optimistic Update
+            const newMsg: ChatMessage = {
+                id: Date.now().toString(), // temp id
+                senderId: user.id,
+                text: type === 'image' ? 'Sent an image' : 'Sent a file',
+                createdAt: new Date(),
+                type,
+                fileUrl: url,
+                fileName: file.name
+            };
+            setMessages(prev => [...prev, newMsg]);
+
+            // Scroll to bottom
+            setTimeout(() => {
+                scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
         } catch (error) {
             console.error("Upload failed", error);
             alert("Failed to upload file");
