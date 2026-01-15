@@ -17,7 +17,7 @@ export default function BottomNav() {
     const isActive = (path: string) => pathname === path;
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-900/90 backdrop-blur-lg border-t border-gray-200 dark:border-slate-800 sm:hidden pb-safe-area-inset-bottom">
+        <div className="fixed bottom-0 left-0 right-0 z-[999] bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl border-t border-gray-200 dark:border-slate-800 sm:hidden pb-safe-area-inset-bottom shadow-2xl-up transition-transform duration-300">
             <div className="flex justify-around items-center h-16 px-2">
                 {/* 1. Home */}
                 <BottomNavItem
