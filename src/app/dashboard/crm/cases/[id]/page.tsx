@@ -197,9 +197,9 @@ export default function CaseDetailPage() {
             loadDocuments();
             // Force a slight delay and reload again just in case of propagation delay
             setTimeout(loadDocuments, 500);
-        } catch (e: any) {
+        } catch (e) {
             console.error("[handleMoveExecute] Failed:", e);
-            alert(`Failed to move item: ${e.message || "Unknown error"}`);
+            alert(`Failed to move item: ${(e as Error).message || "Unknown error"}`);
         }
     };
 
