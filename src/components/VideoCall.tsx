@@ -445,8 +445,13 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
                             // What if I AM the caller and I hang up?
                             // I need to log it here.
 
+                            // Log if we were connected and we are the caller (Simple rule to avoid dupes)
                             if (callState === CallState.CONNECTED && isCaller) {
                                 sendMessage(chatId, myId, "Video Call Ended", { type: 'call_log' });
+                            }
+                            // Also log if we Cancel/Hangup while RINGING (No Answer)
+                            else if ((callState === CallState.RINGING || callState === CallState.CALLING) && isCaller) {
+                                sendMessage(chatId, myId, "Call No Answer", { type: 'call_log' });
                             }
                             // If I am NOT the caller (I am receiver) and I hang up:
                             // The OTHER person (Caller) receives 'end-call'.
