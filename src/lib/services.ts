@@ -766,15 +766,93 @@ export const getOpenCommunityRequests = async (filters?: { city?: string, specia
     }));
 };
 export const getCommunityRequestById = async (id: string) => {
-    console.log("getCommunityRequestById", id);
-    return null;
+    const { data, error } = await supabase
+        .from('community_requests')
+        .select(`
+            *,
+            proposals:request_proposals(count)
+        `)
+        .eq('id', id)
+        .single();
+
+    if (error) {
+        console.error("Error fetching request:", error);
+        return null;
+    }
+
+    const req = data as unknown as DBCommunityRequest;
+    return {
+        id: req.id,
+        clientId: req.client_id,
+        clientName: req.client_name,
+        title: req.title,
+        description: req.description,
+        location: req.location || '',
+        specialty: req.specialty || '',
+        budget: req.budget,
+        status: req.status as 'open' | 'accepted' | 'closed',
+        createdAt: req.created_at,
+        proposalCount: req.proposals?.[0]?.count || 0
+    } as CommunityRequest;
 };
-export const createProposal = async (data: Record<string, unknown>) => {
-    console.log("createProposal", data.requestId);
+export const createProposal = async (data: {
+    requestId: string;
+    lawyerId: string;
+    lawyerName: string;
+    lawyerPhoto?: string;
+    coverLetter: string;
+    price: number;
+    estimatedDuration?: string;
+}) => {
+    const { error } = await supabase.from('request_proposals').insert({
+        request_id: data.requestId,
+        lawyer_id: data.lawyerId,
+        lawyer_name: data.lawyerName,
+        lawyer_photo: data.lawyerPhoto,
+        cover_letter: data.coverLetter,
+        price: data.price,
+        estimated_duration: data.estimatedDuration,
+        status: 'pending'
+    });
+    if (error) throw error;
 };
+interface DBRequestProposal {
+    id: string;
+    request_id: string;
+    lawyer_id: string;
+    lawyer_name: string;
+    lawyer_photo?: string;
+    cover_letter: string;
+    price: number;
+    estimated_duration?: string;
+    status: 'pending' | 'accepted' | 'rejected';
+    created_at: string;
+}
+
 export const getProposalsForRequest = async (requestId: string) => {
-    console.log("getProposalsForRequest", requestId);
-    return [] as RequestProposal[];
+    const { data, error } = await supabase
+        .from('request_proposals')
+        .select('*')
+        .eq('request_id', requestId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error("Error fetching proposals:", error);
+        return [];
+    }
+    return (data as unknown as DBRequestProposal[]).map((p) => ({
+        id: p.id,
+        requestId: p.request_id,
+        lawyerId: p.lawyer_id,
+        lawyerName: p.lawyer_name || 'Lawyer',
+        lawyerPhotoUrl: p.lawyer_photo,
+        message: p.cover_letter,
+        price: p.price,
+        proposedPrice: p.price,
+        estimatedDuration: p.estimated_duration,
+        status: p.status,
+        createdAt: p.created_at
+    }));
 };
 export const acceptProposal = async (requestId: string, proposalId: string, _lawyerId: string) => {
     console.log("Accepting proposal", proposalId, "for request", requestId, "by lawyer", _lawyerId);
@@ -782,8 +860,33 @@ export const acceptProposal = async (requestId: string, proposalId: string, _law
     await supabase.from('community_requests').update({ status: 'accepted' }).eq('id', requestId);
 };
 export const getMyClientRequests = async (clientId: string) => {
-    console.log("getMyClientRequests", clientId);
-    return [];
+    const { data, error } = await supabase
+        .from('community_requests')
+        .select(`
+            *,
+            proposals:request_proposals(count)
+        `)
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error("Error fetching client requests:", error);
+        return [];
+    }
+
+    return (data as unknown as DBCommunityRequest[]).map((req) => ({
+        id: req.id,
+        clientId: req.client_id,
+        clientName: req.client_name,
+        title: req.title,
+        description: req.description,
+        location: req.location || '',
+        specialty: req.specialty || '',
+        budget: req.budget,
+        status: req.status as 'open' | 'accepted' | 'closed',
+        createdAt: req.created_at,
+        proposalCount: req.proposals?.[0]?.count || 0
+    })) as CommunityRequest[];
 };
 
 

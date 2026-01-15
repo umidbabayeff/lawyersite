@@ -46,9 +46,9 @@ export default function LawyerRequestDetailPage() {
                 requestId: request.id,
                 lawyerId: user.id,
                 lawyerName: userProfile?.name || "Lawyer",
-                lawyerPhotoUrl: userProfile?.photoUrl || null,
-                message,
-                proposedPrice: parseFloat(price),
+                lawyerPhoto: userProfile?.photoUrl || undefined,
+                coverLetter: message,
+                price: parseFloat(price),
                 estimatedDuration: duration
             });
             alert("Proposal submitted successfully!");
