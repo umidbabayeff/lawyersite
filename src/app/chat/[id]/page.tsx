@@ -5,9 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { subscribeToMessages, sendMessage, ChatMessage, markChatRead, uploadChatAttachment, createCase, deleteChat, getUserProfile, UserProfile, getChatMessages, getCaseByClient, importChatFilesToCRM, Case } from "@/lib/services";
 
-// ...
 
-const [existingCase, setExistingCase] = useState<Case | null>(null);
 import { FaPaperPlane, FaArrowLeft, FaPaperclip, FaFile, FaBriefcase, FaTrash, FaVideo, FaPhoneSlash, FaFileImport, FaDownload } from "react-icons/fa";
 import VideoCall from "@/components/VideoCall";
 import Image from "next/image";
