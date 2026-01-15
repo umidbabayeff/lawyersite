@@ -448,9 +448,9 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
 
                     <button
                         aria-label="End Call"
-                        onClick={() => {
+                        onClick={async () => {
                             // End call signal
-                            signalCall(chatId, { type: 'end-call', senderId: myId });
+                            await signalCall(chatId, { type: 'end-call', senderId: myId });
 
                             // Log if we were connected and we are the caller (Simple rule to avoid dupes)
                             // OR: Whoever hangs up logs it?
@@ -461,11 +461,11 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
 
                             // Log if we were connected and we are the caller (Simple rule to avoid dupes)
                             if (callState === CallState.CONNECTED && isCaller) {
-                                sendMessage(chatId, myId, "Video Call Ended", { type: 'call_log' });
+                                await sendMessage(chatId, myId, "Video Call Ended", { type: 'call_log' });
                             }
                             // Also log if we Cancel/Hangup while RINGING (No Answer)
                             else if ((callState === CallState.RINGING || callState === CallState.CALLING) && isCaller) {
-                                sendMessage(chatId, myId, "Call No Answer", { type: 'call_log' });
+                                await sendMessage(chatId, myId, "Call No Answer", { type: 'call_log' });
                             }
                             // If I am NOT the caller (I am receiver) and I hang up:
                             // The OTHER person (Caller) receives 'end-call'.
