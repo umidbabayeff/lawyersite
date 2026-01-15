@@ -32,6 +32,10 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
 
     // Strict State Machine
     const [callState, setCallState] = useState<CallState>(isCaller ? CallState.CALLING : CallState.RINGING);
+    // Ref for access in unload handler
+    const callStateRef = useRef(callState);
+    useEffect(() => { callStateRef.current = callState; }, [callState]);
+
     // Optional: End reason for UI clarity (e.g. "User Busy")
     const [endReason, setEndReason] = useState<string | null>(null);
 
@@ -248,8 +252,18 @@ export default function VideoCall({ chatId, myId, myName, isCaller, onEndCall, o
 
         const handleBeforeUnload = () => {
             // Best effort to notify peer before closing
-            // We use 'void' to fire-and-forget promise
             void signalCall(chatId, { type: 'end-call', senderId: myId });
+
+            // LOGGING ON UNLOAD (Best Effort)
+            const state = callStateRef.current;
+            if (isCaller) {
+                if (state === CallState.CONNECTED) {
+                    void sendMessage(chatId, myId, "Video Call Ended", { type: 'call_log' });
+                } else if (state === CallState.RINGING || state === CallState.CALLING) {
+                    void sendMessage(chatId, myId, "Call No Answer", { type: 'call_log' });
+                }
+            }
+
             endCallCleanup();
         };
         window.addEventListener('beforeunload', handleBeforeUnload);

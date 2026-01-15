@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/lib/auth";
-import { CallSignal, subscribeToCallEvents, getUserProfile, UserProfile, signalCall } from "@/lib/services";
+import { CallSignal, subscribeToCallEvents, getUserProfile, UserProfile, signalCall, sendMessage } from "@/lib/services";
 import VideoCall from "./VideoCall";
 import Image from "next/image";
 
@@ -37,6 +37,14 @@ export default function GlobalCallManager() {
                 // Notify caller it was missed
                 if (user && incomingSignal.senderId) {
                     signalCall(incomingSignal.senderId, { type: 'missed-call', senderId: user.id });
+                    // Log "Missed Call" for MYSELF (Receiver)
+                    // Message: FROM Caller TO Me (so it appears in the chat with Caller)
+                    // Actually, `sendMessage` arg 1 is `chatId` (the OTHER person).
+                    // So we send to `incomingSignal.senderId`.
+                    // The `senderId` arg of `sendMessage` is ME (`user.id`).
+                    // Meaning: "I (User) sent a message to Caller(ChatId) saying 'Missed video call'".
+                    // This will show up in MY chat with HIM.
+                    sendMessage(incomingSignal.senderId, user.id, "Missed video call", { type: 'call_log' });
                 }
                 handleRejectCall();
             }, 30000);
