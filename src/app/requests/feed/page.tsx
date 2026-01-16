@@ -76,7 +76,10 @@ export default function RequestFeedPage() {
                     />
                 </div>
                 <div className="w-full md:w-auto">
-                    <button onClick={() => { setCity(""); setSpecialty(""); }} className="text-sm text-primary hover:underline">
+                    <button
+                        onClick={() => { setCity(""); setSpecialty(""); }}
+                        className="h-10 px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors text-sm font-medium whitespace-nowrap"
+                    >
                         Clear Filters
                     </button>
                 </div>
