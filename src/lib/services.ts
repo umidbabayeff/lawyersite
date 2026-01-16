@@ -692,11 +692,24 @@ export const addReview = async (review: Record<string, unknown>) => {
 // --- Community Requests ---
 
 export const deleteCommunityRequest = async (requestId: string) => {
-    // Attempt to delete request directly. Database should handle connected proposals via ON DELETE CASCADE.
-    // If we try to delete proposals manually here, RLS will likely block it for the client.
+    // 1. Try to delete proposals explicitly first (client-side attempt).
+    // This handles cases where RLS *might* allow it, or if policies were adjusted.
+    // If it fails (RLS), we ignore and proceed to delete request (hoping for Cascade).
+    const { error: proposalsError } = await supabase.from('request_proposals').delete().eq('request_id', requestId);
+    if (proposalsError) {
+        // Just log, don't throw yet. Hard delete will fail if this didn't work AND cascade is missing.
+        console.warn("Could not delete proposals explicitly (likely RLS):", proposalsError);
+    }
+
+    // 2. Delete the request.
     const { error } = await supabase.from('community_requests').delete().eq('id', requestId);
+
     if (error) {
         console.error("Delete request error details:", error);
+        // Check for Foreign Key Violation (Postgres Code 23503)
+        if (error.code === '23503') {
+            throw new Error("Foreign Key Violation: Cannot delete request because valid proposals exist. Please run the 'fix_delete_cascade.sql' script in Supabase.");
+        }
         throw error;
     }
 };
