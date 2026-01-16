@@ -73,7 +73,7 @@ export default function RequestDetailPage() {
     return (
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             {/* Request Header */}
-            <div className="bg-white dark:bg-slate-900 shadow overflow-hidden sm:rounded-lg mb-8 border border-gray-100 dark:border-slate-800">
+            <div className="bg-white dark:bg-slate-900 shadow overflow-hidden rounded-2xl mb-8 border border-gray-100 dark:border-slate-800">
                 <div className="px-4 py-5 sm:px-6 flex flex-col sm:flex-row justify-between items-start gap-4">
                     <div className="flex-1 min-w-0">
                         <h3 className="text-2xl font-bold leading-6 text-gray-900 dark:text-white mb-2 sm:mb-0 break-words">{request.title}</h3>

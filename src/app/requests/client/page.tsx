@@ -57,7 +57,7 @@ export default function MyRequestsPage() {
                     </div>
                 </div>
             ) : (
-                <ul role="list" className="divide-y divide-gray-100 dark:divide-slate-800 bg-white dark:bg-slate-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 sm:rounded-xl">
+                <ul role="list" className="divide-y divide-gray-100 dark:divide-slate-800 bg-white dark:bg-slate-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 rounded-2xl">
                     {requests.map((request) => (
                         <li key={request.id} className="relative flex flex-col sm:flex-row justify-between gap-x-6 px-4 py-5 hover:bg-gray-50 dark:hover:bg-slate-800/50 sm:px-6 gap-y-4">
                             <div className="flex min-w-0 gap-x-4">
