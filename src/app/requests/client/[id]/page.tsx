@@ -60,9 +60,9 @@ export default function RequestDetailPage() {
         try {
             await deleteCommunityRequest(request!.id);
             router.push('/requests/client');
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error deleting request:", error);
-            if (error.message && error.message.includes("Foreign Key Violation")) {
+            if (error instanceof Error && error.message.includes("Foreign Key Violation")) {
                 alert("Cannot delete this request because it has active proposals.\n\nACTION REQUIRED: Please ask the site administrator to run the 'fix_delete_cascade.sql' script in the Database SQL Editor.");
             } else {
                 alert("Failed to delete request. Please try again or contact support.");
