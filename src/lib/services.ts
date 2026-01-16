@@ -688,7 +688,18 @@ export const addReview = async (review: Record<string, unknown>) => {
 };
 
 
+
 // --- Community Requests ---
+
+export const deleteCommunityRequest = async (requestId: string) => {
+    // Delete proposals first (if not cascading, but good practice to be explicit or rely on DB)
+    // Assuming DB has cascade delete, but if not:
+    await supabase.from('request_proposals').delete().eq('request_id', requestId);
+
+    const { error } = await supabase.from('community_requests').delete().eq('id', requestId);
+    if (error) throw error;
+};
+
 
 
 export const createCommunityRequest = async (data: {
@@ -1206,18 +1217,51 @@ export const toggleLawyerVerification = async (uid: string, status: boolean) => 
     if (error) throw error;
 };
 export const getSiteSettings = async (): Promise<SiteSettings> => {
+    const { data, error } = await supabase
+        .from('site_settings')
+        .select('*')
+        .single();
+
+    if (error || !data) {
+        return {
+            maintenanceMode: false,
+            allowSignups: true,
+            welcomeMessage: "",
+            contactEmail: "",
+            contactPhone: "",
+            address: "",
+            socialLinks: { facebook: "", twitter: "", instagram: "", linkedin: "" }
+        };
+    }
+
     return {
-        maintenanceMode: false,
-        allowSignups: true,
-        welcomeMessage: "",
-        contactEmail: "",
-        contactPhone: "",
-        address: "",
-        socialLinks: { facebook: "", twitter: "", instagram: "", linkedin: "" }
+        maintenanceMode: data.maintenance_mode,
+        allowSignups: data.allow_signups,
+        welcomeMessage: data.welcome_message,
+        contactEmail: data.contact_email,
+        contactPhone: data.contact_phone,
+        address: data.address,
+        socialLinks: data.social_links || {}
     };
 };
 export const updateSiteSettings = async (settings: Partial<SiteSettings>) => {
-    console.log("updateSiteSettings", settings);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const payload: any = { updated_at: new Date().toISOString() };
+
+    if (settings.maintenanceMode !== undefined) payload.maintenance_mode = settings.maintenanceMode;
+    if (settings.allowSignups !== undefined) payload.allow_signups = settings.allowSignups;
+    if (settings.welcomeMessage !== undefined) payload.welcome_message = settings.welcomeMessage;
+    if (settings.contactEmail !== undefined) payload.contact_email = settings.contactEmail;
+    if (settings.contactPhone !== undefined) payload.contact_phone = settings.contactPhone;
+    if (settings.address !== undefined) payload.address = settings.address;
+    if (settings.socialLinks !== undefined) payload.social_links = settings.socialLinks;
+
+    const { error } = await supabase
+        .from('site_settings')
+        .update(payload)
+        .eq('id', 1);
+
+    if (error) throw error;
 };
 const dummyLawyers = [
     {
@@ -1292,30 +1336,52 @@ export const clearDatabase = async () => {
 
 
 // --- Constants ---
-export const getConstants = async (type: 'locations' | 'specializations') => {
-    // Return hardcoded lists for now to ensure dropdowns work immediately
-    if (type === 'locations') {
-        return [
-            "New York", "Los Angeles", "Chicago", "Houston", "Phoenix",
-            "Philadelphia", "San Antonio", "San Diego", "Dallas", "San Jose",
-            "Austin", "Jacksonville", "Fort Worth", "Columbus", "San Francisco",
-            "Charlotte", "Indianapolis", "Seattle", "Denver", "Washington"
-        ].sort();
+export const getConstants = async (type: 'locations' | 'specializations', language: string = 'en') => {
+    const { data, error } = await supabase
+        .from('admin_constants')
+        .select('value')
+        .eq('category', type)
+        // Default to English if language is not provided or invalid? 
+        // Actually, let's trust the caller passes a valid supported language code
+        .eq('language', language);
+
+    if (error) {
+        console.error(`Error fetching ${type}:`, error);
+        return [];
     }
-    if (type === 'specializations') {
-        return [
-            "Criminal Defense", "Family Law", "Corporate Law", "Immigration",
-            "Personal Injury", "Real Estate", "Intellectual Property", "Employment Law",
-            "Tax Law", "Bankruptcy", "Civil Litigation", "Medical Malpractice"
-        ].sort();
+
+    // If no data found for this language, maybe fallback? 
+    // For now, return empty so admin knows it's empty and can add them.
+    return data.map((item: { value: string }) => item.value).sort();
+};
+
+export const addConstant = async (type: string, value: string, language: string = 'en') => {
+    const { error } = await supabase
+        .from('admin_constants')
+        .insert({
+            category: type,
+            value,
+            language
+        });
+
+    if (error) {
+        console.error("Error adding constant:", error);
+        throw error;
     }
-    return [];
 };
-export const addConstant = async (type: string, value: string) => {
-    console.log("addConstant", type, value);
-};
-export const removeConstant = async (type: string, value: string) => {
-    console.log("removeConstant", type, value);
+
+export const removeConstant = async (type: string, value: string, language: string = 'en') => {
+    const { error } = await supabase
+        .from('admin_constants')
+        .delete()
+        .eq('category', type)
+        .eq('value', value)
+        .eq('language', language);
+
+    if (error) {
+        console.error("Error removing constant:", error);
+        throw error;
+    }
 };
 
 

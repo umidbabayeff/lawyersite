@@ -11,7 +11,7 @@ import { useLanguage } from "@/lib/i18n_context";
 import Image from "next/image";
 
 export default function Home() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [lawyers, setLawyers] = useState<LawyerProfile[]>([]);
   const [filteredLawyers, setFilteredLawyers] = useState<LawyerProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,12 +38,13 @@ export default function Home() {
       }
     }
     fetchLawyers();
+  }, []); // Lawyers data might not need to be refetched on lang change unless we localize it too later
 
-    // Fetch Metadata
-    // Fetch Metadata
-    getConstants('locations').then(setLocations);
-    getConstants('specializations').then(setSpecializations);
-  }, []);
+  useEffect(() => {
+    // Fetch Metadata when language changes
+    getConstants('locations', language).then(setLocations);
+    getConstants('specializations', language).then(setSpecializations);
+  }, [language]);
 
   useEffect(() => {
     let result = lawyers;

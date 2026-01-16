@@ -7,9 +7,12 @@ import { createCommunityRequest } from "@/lib/services";
 import { getConstants } from "@/lib/services";
 import SearchableSelect from "@/components/ui/SearchableSelect";
 
+import { useLanguage } from "@/lib/i18n_context";
+
 export default function CreateRequestPage() {
     const { user, userProfile } = useAuth();
     const router = useRouter();
+    const { language } = useLanguage();
     const [loading, setLoading] = useState(false);
 
     // Form state
@@ -24,9 +27,9 @@ export default function CreateRequestPage() {
     const [specializations, setSpecializations] = useState<string[]>([]);
 
     useEffect(() => {
-        getConstants("locations").then(setCities);
-        getConstants("specializations").then(setSpecializations);
-    }, []);
+        getConstants("locations", language).then(setCities);
+        getConstants("specializations", language).then(setSpecializations);
+    }, [language]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

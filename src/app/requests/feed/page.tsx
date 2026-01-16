@@ -8,8 +8,11 @@ import { getOpenCommunityRequests, getConstants, CommunityRequest } from "@/lib/
 import { FaMapMarkerAlt, FaMoneyBillWave } from "react-icons/fa";
 import SearchableSelect from "@/components/ui/SearchableSelect";
 
+import { useLanguage } from "@/lib/i18n_context";
+
 export default function RequestFeedPage() {
     const { user, userProfile } = useAuth();
+    const { language } = useLanguage();
     const [requests, setRequests] = useState<CommunityRequest[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -20,9 +23,9 @@ export default function RequestFeedPage() {
     const [specializations, setSpecializations] = useState<string[]>([]);
 
     useEffect(() => {
-        getConstants("locations").then(setCities);
-        getConstants("specializations").then(setSpecializations);
-    }, []);
+        getConstants("locations", language).then(setCities);
+        getConstants("specializations", language).then(setSpecializations);
+    }, [language]);
 
     useEffect(() => {
         // Only set loading to true if we aren't already loading 

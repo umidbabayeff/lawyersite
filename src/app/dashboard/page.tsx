@@ -11,9 +11,9 @@ import Image from "next/image";
 
 export default function Dashboard() {
     const { user, userProfile, loading, refreshProfile } = useAuth();
+    const { t, language } = useLanguage();
     const router = useRouter();
     const [saving, setSaving] = useState(false);
-    const { t } = useLanguage();
 
     const { register, handleSubmit, setValue, watch } = useForm<LawyerProfile>();
     const cityValue = watch("city");
@@ -31,9 +31,9 @@ export default function Dashboard() {
     const [uploadingBanner, setUploadingBanner] = useState(false);
 
     useEffect(() => {
-        getConstants('locations').then(setLocations);
-        getConstants('specializations').then(setSpecializationsList);
-    }, []);
+        getConstants('locations', language).then(setLocations);
+        getConstants('specializations', language).then(setSpecializationsList);
+    }, [language]);
 
     useEffect(() => {
         if (user && userProfile?.role === 'lawyer') {

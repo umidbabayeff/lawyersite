@@ -24,7 +24,7 @@ export default function AuthPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const router = useRouter();
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const [locations, setLocations] = useState<string[]>([]);
     const supabase = createClient();
 
@@ -32,8 +32,8 @@ export default function AuthPage() {
     const cityValue = watch("city");
 
     useEffect(() => {
-        getConstants('locations').then(setLocations);
-    }, []);
+        getConstants('locations', language).then(setLocations);
+    }, [language]);
 
     const onSubmit = async (data: AuthFormData) => {
         setLoading(true);

@@ -14,11 +14,11 @@ export default function DataManager() {
     const [newSpec, setNewSpec] = useState("");
 
     const refreshData = useCallback(async () => {
-        const locs = await getConstants('locations');
-        const specs = await getConstants('specializations');
+        const locs = await getConstants('locations', language);
+        const specs = await getConstants('specializations', language);
         setLocations(locs);
         setSpecializations(specs);
-    }, []);
+    }, [language]);
 
     useEffect(() => {
         const load = async () => {
@@ -29,16 +29,26 @@ export default function DataManager() {
 
     const handleAdd = async (type: 'locations' | 'specializations', value: string) => {
         if (!value.trim()) return;
-        await addConstant(type, value);
-        if (type === 'locations') setNewLocation("");
-        else setNewSpec("");
-        await refreshData();
+        try {
+            await addConstant(type, value, language);
+            if (type === 'locations') setNewLocation("");
+            else setNewSpec("");
+            await refreshData();
+        } catch (error) {
+            console.error(error);
+            alert("Error adding item");
+        }
     };
 
     const handleRemove = async (type: 'locations' | 'specializations', value: string) => {
         if (!confirm(`${t("admin.remove")} "${value}"?`)) return;
-        await removeConstant(type, value);
-        await refreshData();
+        try {
+            await removeConstant(type, value, language);
+            await refreshData();
+        } catch (error) {
+            console.error(error);
+            alert("Error removing item");
+        }
     };
 
     return (
