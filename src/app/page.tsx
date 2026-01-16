@@ -136,20 +136,20 @@ export default function Home() {
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 xl:grid-cols-3">
               {filteredLawyers.map((lawyer, index) => (
                 <div key={lawyer.uid || index} className="group bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col">
                   {/* Card Header / Image Placeholder */}
                   <div className="h-24 bg-gradient-to-r from-slate-100 to-slate-200 relative">
                     {lawyer.bannerUrl && (
-                      <Image src={lawyer.bannerUrl} alt="Banner" fill className="object-cover" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
+                      <Image src={lawyer.bannerUrl} alt="Banner" fill className="object-cover" sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw" />
                     )}
                     <div className={`absolute inset-0 ${lawyer.bannerUrl ? 'bg-black/20' : ''}`}></div>
                     <div className="absolute top-4 right-4 flex gap-2 z-10">
                       <FavoriteButton lawyerId={lawyer.uid} />
                       {lawyer.verified && (
-                        <div className="bg-white/90 backdrop-blur text-xs font-bold px-3 py-1 rounded-full text-green-700 shadow-sm flex items-center gap-1">
-                          <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span> Verified
+                        <div className="bg-white/90 backdrop-blur text-xs font-bold px-2 py-1 rounded-full text-green-700 shadow-sm flex items-center gap-1">
+                          <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span> <span className="hidden sm:inline">Verified</span>
                         </div>
                       )}
                     </div>
