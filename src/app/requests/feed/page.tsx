@@ -78,7 +78,7 @@ export default function RequestFeedPage() {
                 <div className="w-full md:w-auto">
                     <button
                         onClick={() => { setCity(""); setSpecialty(""); }}
-                        className="h-12 px-6 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors text-sm font-medium whitespace-nowrap"
+                        className="w-full md:w-auto px-6 py-3 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors text-sm font-medium whitespace-nowrap border border-transparent"
                     >
                         Clear Filters
                     </button>
