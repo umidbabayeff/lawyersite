@@ -51,7 +51,9 @@ export default function Navbar() {
 
                         {/* Desktop Navigation */}
                         <div className="hidden sm:flex sm:items-center sm:space-x-8">
-                            <NavLink href="/" active={isActive('/')}>{t("nav.findLawyer")}</NavLink>
+                            {(!user || userProfile?.role !== 'lawyer') && (
+                                <NavLink href="/" active={isActive('/')}>{t("nav.findLawyer")}</NavLink>
+                            )}
                             {mounted && user && userProfile?.role === 'client' && (
                                 <>
                                     <NavLink href="/favorites" active={isActive('/favorites')}>{t("nav.saved")}</NavLink>
