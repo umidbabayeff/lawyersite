@@ -96,8 +96,13 @@ body {
 .scrollbar-hide {
   -ms-overflow-style: none;
   /* In Explore and Edge */
-  scrollbar-width: none;
-  /* Firefox */
+}
+
+@supports (scrollbar-width: none) {
+  .scrollbar-hide {
+    scrollbar-width: none;
+    /* Firefox */
+  }
 }
 
 .scrollbar-hide::-webkit-scrollbar {
