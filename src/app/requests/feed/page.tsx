@@ -56,7 +56,7 @@ export default function RequestFeedPage() {
             </div>
 
             {/* Filters */}
-            <div className="bg-white dark:bg-slate-900 p-4 rounded-lg shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-end md:items-center">
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-lg shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-end md:items-end">
                 <div className="w-full md:w-1/3">
                     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">City</label>
                     <SearchableSelect
