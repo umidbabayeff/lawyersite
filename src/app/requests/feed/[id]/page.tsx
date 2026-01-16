@@ -71,12 +71,12 @@ export default function LawyerRequestDetailPage() {
             <div className="bg-white dark:bg-slate-900 shadow overflow-hidden sm:rounded-lg mb-8 border border-gray-200 dark:border-slate-800">
                 <div className="px-4 py-5 sm:px-6">
                     <h3 className="text-2xl font-bold leading-6 text-gray-900 dark:text-white">{request.title}</h3>
-                    <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                        <span className="flex items-center gap-1"><FaUser /> {request.clientName}</span>
-                        <span className="flex items-center gap-1"><FaMapMarkerAlt /> {request.location}</span>
-                        <span className="flex items-center gap-1"><FaGavel /> {request.specialty}</span>
-                        <span className="flex items-center gap-1 text-green-600 dark:text-green-500 font-medium">
-                            <FaMoneyBillWave /> {request.budget ? `$${request.budget}` : 'Negotiable'}
+                    <div className="mt-2 grid grid-cols-2 gap-4 sm:flex sm:flex-wrap sm:items-center text-sm text-gray-500 dark:text-gray-400">
+                        <span className="flex items-center gap-1 overflow-hidden"><FaUser className="shrink-0" /> <span className="truncate">{request.clientName}</span></span>
+                        <span className="flex items-center gap-1 overflow-hidden"><FaMapMarkerAlt className="shrink-0" /> <span className="truncate">{request.location}</span></span>
+                        <span className="flex items-center gap-1 overflow-hidden"><FaGavel className="shrink-0" /> <span className="truncate">{request.specialty}</span></span>
+                        <span className="flex items-center gap-1 text-green-600 dark:text-green-500 font-medium overflow-hidden">
+                            <FaMoneyBillWave className="shrink-0" /> <span className="truncate">{request.budget ? `$${request.budget}` : 'Negotiable'}</span>
                         </span>
                     </div>
                 </div>
