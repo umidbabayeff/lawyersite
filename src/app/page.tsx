@@ -10,11 +10,23 @@ import SearchableSelect from "@/components/ui/SearchableSelect";
 import { useLanguage } from "@/lib/i18n_context";
 import Image from "next/image";
 
+import { useRouter } from "next/navigation";
+
+import { useAuth } from "@/lib/auth"; // Added import
+
 export default function Home() {
   const { t, language } = useLanguage();
+  const { userProfile, loading: authLoading } = useAuth(); // Renamed loading
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading && userProfile?.role === 'lawyer') {
+      router.push('/dashboard');
+    }
+  }, [userProfile, authLoading, router]);
   const [lawyers, setLawyers] = useState<LawyerProfile[]>([]);
   const [filteredLawyers, setFilteredLawyers] = useState<LawyerProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Kept existing loading as is
 
   // Metadata
   const [locations, setLocations] = useState<string[]>([]);
