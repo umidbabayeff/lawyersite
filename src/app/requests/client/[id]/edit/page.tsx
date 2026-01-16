@@ -121,7 +121,7 @@ export default function EditRequestPage() {
                                     value={city}
                                     onChange={setCity}
                                     placeholder="Select a city..."
-                                    className="block w-full"
+                                    className="block w-full rounded-md border-0 py-1.5 pl-3 text-gray-900 dark:text-white dark:bg-slate-800 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-slate-700 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 flex items-center justify-between"
                                 />
                             </div>
                         </div>
@@ -136,7 +136,7 @@ export default function EditRequestPage() {
                                     value={specialty}
                                     onChange={setSpecialty}
                                     placeholder="Select specialty..."
-                                    className="block w-full"
+                                    className="block w-full rounded-md border-0 py-1.5 pl-3 text-gray-900 dark:text-white dark:bg-slate-800 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-slate-700 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 flex items-center justify-between"
                                 />
                             </div>
                         </div>

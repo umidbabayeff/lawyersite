@@ -41,9 +41,9 @@ export default function SearchableSelect({ items, value, onChange, placeholder, 
 
             <div
                 onClick={() => setIsOpen(!isOpen)}
-                className={className || "w-full pl-10 pr-10 py-3 bg-white/10 rounded-xl text-white cursor-pointer hover:bg-white/20 transition-all border border-transparent focus:border-accent/50 flex items-center justify-between"}
+                className={className || "w-full pl-10 pr-10 py-3 bg-gray-50 dark:bg-white/10 rounded-xl text-gray-900 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-white/20 transition-all border border-gray-200 dark:border-transparent focus:border-accent/50 flex items-center justify-between"}
             >
-                <span className={value ? (className ? "text-gray-900 dark:text-white" : "text-white") : "text-slate-400"}>
+                <span className={value ? (className ? "text-gray-900 dark:text-white" : "text-gray-900 dark:text-white") : "text-gray-500 dark:text-slate-400"}>
                     {value || placeholder}
                 </span>
                 <FaChevronDown className={`text-slate-400 text-xs transition-transform ${isOpen ? 'rotate-180' : ''}`} />
