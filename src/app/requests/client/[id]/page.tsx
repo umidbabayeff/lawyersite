@@ -62,10 +62,16 @@ export default function RequestDetailPage() {
             router.push('/requests/client');
         } catch (error: unknown) {
             console.error("Error deleting request:", error);
-            if (error instanceof Error && error.message.includes("Foreign Key Violation")) {
+
+            const err = error as { message?: string, details?: string };
+            const isFKViolation = err.message?.includes("Foreign Key Violation") || err.details?.includes("Foreign Key Violation");
+
+            if (isFKViolation) {
                 alert("Cannot delete this request because it has active proposals.\n\nACTION REQUIRED: Please ask the site administrator to run the 'fix_delete_cascade.sql' script in the Database SQL Editor.");
             } else {
-                alert("Failed to delete request. Please try again or contact support.");
+                // Show the raw error to help debugging
+                const errorMessage = err.message || err.details || JSON.stringify(error);
+                alert(`Failed to delete request. Error: ${errorMessage}`);
             }
         }
     };
