@@ -47,8 +47,8 @@ export default function AdminPage() {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t("admin.dashboard")}</h1>
 
             {/* Tabs */}
-            <div className="border-b border-gray-200 dark:border-slate-800">
-                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+            <div className="border-b border-gray-200 dark:border-slate-800 overflow-x-auto">
+                <nav className="-mb-px flex space-x-8 min-w-max" aria-label="Tabs">
                     <button
                         onClick={() => setActiveTab('users')}
                         className={`${activeTab === 'users'
@@ -100,7 +100,7 @@ export default function AdminPage() {
                 {activeTab === 'settings' && <SiteSettingsForm />}
 
                 {activeTab === 'lawyers' && (
-                    <div className="bg-white dark:bg-slate-900 shadow overflow-hidden sm:rounded-md border border-gray-200 dark:border-slate-800">
+                    <div className="bg-white dark:bg-slate-900 shadow overflow-hidden rounded-lg border border-gray-200 dark:border-slate-800">
                         <ul className="divide-y divide-gray-200 dark:divide-slate-800">
                             {lawyers.map((lawyer) => (
                                 <li key={lawyer.uid} className="px-4 py-4 sm:px-6 flex items-center justify-between">

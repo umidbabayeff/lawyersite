@@ -57,7 +57,7 @@ export default function SiteSettingsForm() {
     if (loading) return <div className="p-8 text-center">{t("common.loading")}</div>;
 
     return (
-        <form onSubmit={handleSave} className="bg-white dark:bg-slate-900 shadow overflow-hidden sm:rounded-lg border border-gray-200 dark:border-slate-800 p-6 space-y-6">
+        <form onSubmit={handleSave} className="bg-white dark:bg-slate-900 shadow overflow-hidden rounded-lg border border-gray-200 dark:border-slate-800 p-6 space-y-6">
             <div>
                 <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">{t("admin.settings.title")}</h3>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">

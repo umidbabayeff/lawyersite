@@ -48,25 +48,25 @@ export default function UserList() {
     if (loading) return <div className="text-center py-8 text-gray-500">{t("common.loading")}</div>;
 
     return (
-        <div className="bg-white dark:bg-slate-900 shadow overflow-hidden sm:rounded-lg border border-gray-200 dark:border-slate-800">
+        <div className="bg-white dark:bg-slate-900 shadow overflow-hidden rounded-lg border border-gray-200 dark:border-slate-800">
             <ul className="divide-y divide-gray-200 dark:divide-slate-800">
                 {users.map((user) => (
-                    <li key={user.uid} className="px-4 py-4 sm:px-6 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
-                        <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 overflow-hidden relative">
+                    <li key={user.uid} className="px-4 py-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <div className="flex items-center gap-4 w-full sm:w-auto">
+                            <div className="h-10 w-10 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 overflow-hidden relative">
                                 {user.photoUrl ? (
                                     <Image src={user.photoUrl} alt={user.name} fill className="object-cover" />
                                 ) : (
                                     <FaUser />
                                 )}
                             </div>
-                            <div>
+                            <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user.name || "No Name"}</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
                             <select
                                 value={user.role}
                                 onChange={(e) => handleRoleChange(user.uid, e.target.value)}
