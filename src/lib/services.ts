@@ -692,11 +692,26 @@ export const addReview = async (review: Record<string, unknown>) => {
 // --- Community Requests ---
 
 export const deleteCommunityRequest = async (requestId: string) => {
-    // Delete proposals first (if not cascading, but good practice to be explicit or rely on DB)
-    // Assuming DB has cascade delete, but if not:
-    await supabase.from('request_proposals').delete().eq('request_id', requestId);
-
+    // Attempt to delete request directly. Database should handle connected proposals via ON DELETE CASCADE.
+    // If we try to delete proposals manually here, RLS will likely block it for the client.
     const { error } = await supabase.from('community_requests').delete().eq('id', requestId);
+    if (error) {
+        console.error("Delete request error details:", error);
+        throw error;
+    }
+};
+
+export const updateCommunityRequest = async (requestId: string, data: {
+    title?: string;
+    description?: string;
+    location?: string;
+    specialty?: string;
+    budget?: number;
+}) => {
+    const updates: Record<string, unknown> = { ...data };
+    if (data.budget === undefined) delete updates.budget; // Don't unset if not passed, specifically handle clearing if needed elsewhere
+
+    const { error } = await supabase.from('community_requests').update(updates).eq('id', requestId);
     if (error) throw error;
 };
 

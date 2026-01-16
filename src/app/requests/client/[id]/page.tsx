@@ -7,7 +7,7 @@ import { getCommunityRequestById, getProposalsForRequest, acceptProposal, delete
 import { useAuth } from "@/lib/auth";
 import { useLanguage } from "@/lib/i18n_context";
 // date-fns removed
-import { FaUser, FaCheckCircle, FaClock, FaTrash } from "react-icons/fa";
+import { FaUser, FaCheckCircle, FaClock, FaTrash, FaEdit } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 
 export default function RequestDetailPage() {
@@ -88,13 +88,22 @@ export default function RequestDetailPage() {
                             {t(`requests.status_${request.status}` as "requests.status_open" | "requests.status_accepted" | "requests.status_closed").toUpperCase()}
                         </span>
                         {request.status === 'open' && (
-                            <button
-                                onClick={handleDelete}
-                                className="inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 whitespace-nowrap"
-                            >
-                                <FaTrash />
-                                Delete
-                            </button>
+                            <>
+                                <button
+                                    onClick={() => router.push(`/requests/client/${request.id}/edit`)}
+                                    className="inline-flex items-center gap-2 rounded-md bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 whitespace-nowrap"
+                                >
+                                    <FaEdit className="text-gray-400" />
+                                    Edit
+                                </button>
+                                <button
+                                    onClick={handleDelete}
+                                    className="inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 whitespace-nowrap"
+                                >
+                                    <FaTrash />
+                                    Delete
+                                </button>
+                            </>
                         )}
                     </div>
                 </div>
