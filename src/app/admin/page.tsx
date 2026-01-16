@@ -47,7 +47,7 @@ export default function AdminPage() {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t("admin.dashboard")}</h1>
 
             {/* Tabs */}
-            <div className="border-b border-gray-200 dark:border-slate-800 overflow-x-auto">
+            <div className="border-b border-gray-200 dark:border-slate-800 overflow-x-auto scrollbar-hide">
                 <nav className="-mb-px flex space-x-8 min-w-max" aria-label="Tabs">
                     <button
                         onClick={() => setActiveTab('users')}
