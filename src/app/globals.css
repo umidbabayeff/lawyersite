@@ -89,4 +89,18 @@ body {
 
 .pb-safe {
   padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 1rem);
+
+}
+
+/* Scrollbar Hiding Utilities */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  /* In Explore and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari and Opera */
 }
