@@ -30,7 +30,7 @@ export default function Navbar() {
                     <div className="flex justify-between h-20 items-center">
                         {/* Logo */}
                         <div className="flex items-center">
-                            <Link href="/" className="flex-shrink-0 flex items-center gap-1.5 sm:gap-2 group">
+                            <Link href={user && userProfile?.role === 'lawyer' ? "/dashboard" : "/"} className="flex-shrink-0 flex items-center gap-1.5 sm:gap-2 group">
                                 <div className="h-7 w-7 sm:h-8 sm:w-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-serif font-bold text-lg sm:text-xl group-hover:bg-accent transition-colors duration-300">
                                     L
                                 </div>
