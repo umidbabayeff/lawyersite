@@ -74,27 +74,29 @@ export default function RequestDetailPage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             {/* Request Header */}
             <div className="bg-white dark:bg-slate-900 shadow overflow-hidden sm:rounded-lg mb-8 border border-gray-100 dark:border-slate-800">
-                <div className="px-4 py-5 sm:px-6 flex justify-between items-start">
+                <div className="px-4 py-5 sm:px-6 flex flex-col sm:flex-row justify-between items-start gap-4">
                     <div>
-                        <h3 className="text-2xl font-bold leading-6 text-gray-900 dark:text-white">{request.title}</h3>
+                        <h3 className="text-2xl font-bold leading-6 text-gray-900 dark:text-white mb-2 sm:mb-0">{request.title}</h3>
                         <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-slate-400">
                             {t("requests.posted_on")} {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}
                         </p>
                     </div>
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${request.status === 'open' ? 'bg-green-100 text-green-800' :
-                        request.status === 'accepted' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-                        }`}>
-                        {t(`requests.status_${request.status}` as "requests.status_open" | "requests.status_accepted" | "requests.status_closed").toUpperCase()}
-                    </span>
-                    {request.status === 'open' && (
-                        <button
-                            onClick={handleDelete}
-                            className="ml-4 inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
-                        >
-                            <FaTrash />
-                            Delete
-                        </button>
-                    )}
+                    <div className="flex flex-wrap gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${request.status === 'open' ? 'bg-green-100 text-green-800' :
+                            request.status === 'accepted' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                            }`}>
+                            {t(`requests.status_${request.status}` as "requests.status_open" | "requests.status_accepted" | "requests.status_closed").toUpperCase()}
+                        </span>
+                        {request.status === 'open' && (
+                            <button
+                                onClick={handleDelete}
+                                className="inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 ml-auto sm:ml-4"
+                            >
+                                <FaTrash />
+                                Delete
+                            </button>
+                        )}
+                    </div>
                 </div>
                 <div className="border-t border-gray-200 dark:border-slate-800 px-4 py-5 sm:px-6">
                     <dl className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">

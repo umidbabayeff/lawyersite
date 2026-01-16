@@ -59,7 +59,7 @@ export default function MyRequestsPage() {
             ) : (
                 <ul role="list" className="divide-y divide-gray-100 dark:divide-slate-800 bg-white dark:bg-slate-900 shadow-sm ring-1 ring-gray-900/5 dark:ring-white/10 sm:rounded-xl">
                     {requests.map((request) => (
-                        <li key={request.id} className="relative flex justify-between gap-x-6 px-4 py-5 hover:bg-gray-50 dark:hover:bg-slate-800/50 sm:px-6">
+                        <li key={request.id} className="relative flex flex-col sm:flex-row justify-between gap-x-6 px-4 py-5 hover:bg-gray-50 dark:hover:bg-slate-800/50 sm:px-6 gap-y-4">
                             <div className="flex min-w-0 gap-x-4">
                                 <div className="min-w-0 flex-auto">
                                     <p className="text-sm font-semibold leading-6 text-gray-900 dark:text-white">
@@ -68,32 +68,35 @@ export default function MyRequestsPage() {
                                             {request.title}
                                         </Link>
                                     </p>
-                                    <p className="mt-1 flex text-xs leading-5 text-gray-500 dark:text-gray-400">
+                                    <p className="mt-1 flex flex-wrap text-xs leading-5 text-gray-500 dark:text-gray-400 gap-y-1">
                                         <span className="truncate flex items-center gap-1"><FaMapMarkerAlt /> {request.location}</span>
-                                        <span className="mx-2">•</span>
+                                        <span className="mx-2 hidden sm:inline">•</span>
                                         <span className="truncate flex items-center gap-1"><FaGavel /> {request.specialty}</span>
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex shrink-0 items-center gap-x-4">
-                                <div className="hidden sm:flex sm:flex-col sm:items-end">
+                            <div className="flex shrink-0 items-center sm:items-end gap-x-4 sm:flex-col sm:gap-y-1 mt-2 sm:mt-0 justify-between sm:justify-start">
+                                <div className="flex items-center gap-2 sm:flex-col sm:items-end sm:gap-0">
                                     <p className="text-sm leading-6 text-gray-900 dark:text-gray-300">
                                         {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : '...'}
                                     </p>
-                                    <p className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
-                                        {t("crm.status")}: <span className={`capitalize font-medium ${request.status === 'open' ? 'text-green-600 dark:text-green-400' :
+                                    <p className="text-xs leading-5 text-gray-500 dark:text-gray-400">
+                                        <span className="sm:hidden mr-1">{t("crm.status")}:</span>
+                                        <span className={`capitalize font-medium ${request.status === 'open' ? 'text-green-600 dark:text-green-400' :
                                             request.status === 'accepted' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'
                                             }`}>{t(`requests.status_${request.status}` as "requests.status_open" | "requests.status_accepted" | "requests.status_closed")}</span>
                                     </p>
                                 </div>
-                                <div className="min-w-[60px] text-right">
-                                    <div className="inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-900/30 px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 ring-1 ring-inset ring-blue-700/10 dark:ring-blue-400/20">
-                                        {request.proposalCount} {t("requests.proposals")}
+                                <div className="flex items-center gap-2">
+                                    <div className="min-w-[60px] text-right">
+                                        <div className="inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-900/30 px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 ring-1 ring-inset ring-blue-700/10 dark:ring-blue-400/20">
+                                            {request.proposalCount} {t("requests.proposals")}
+                                        </div>
                                     </div>
+                                    <svg className="h-5 w-5 flex-none text-gray-400 hidden sm:block" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.16 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                                    </svg>
                                 </div>
-                                <svg className="h-5 w-5 flex-none text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.16 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-                                </svg>
                             </div>
                         </li>
                     ))}
